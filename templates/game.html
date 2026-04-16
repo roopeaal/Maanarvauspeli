@@ -216,16 +216,19 @@
 
         label {
             font-weight: bold;
-            display: block;
+            display: inline-block;
             color: #495057;
             margin-bottom: 2px;
-            width: 100%;
+            width: auto;
+            max-width: 100%;
             text-align: center;
+            white-space: nowrap;
         }
 
         input[type="text"] {
-            width: 100%;
-            max-width: none;
+            width: auto;
+            max-width: 100%;
+            min-width: 240px;
             padding: 9px;
             margin: 0;
             display: block; /* Make the input field a block element */
@@ -336,6 +339,23 @@
                 min-height: 210px;
             }
         }
+
+        @media (max-width: 760px) {
+            .arvaus-alue form {
+                width: 100%;
+            }
+
+            label {
+                display: block;
+                width: 100%;
+                white-space: normal;
+            }
+
+            input[type="text"] {
+                width: 100% !important;
+                min-width: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -396,6 +416,8 @@
             var valittuMaaIso = null;
             var maatLayer = null;
             var arvausKentta = document.getElementById("pelaajan_maa");
+            var arvausLabel = document.querySelector('label[for="pelaajan_maa"]');
+            var arvausAlue = document.querySelector('.arvaus-alue');
 
             // Lisää taustakartta ilman tekstejä (no labels), vaaleansinisellä merellä
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
@@ -406,6 +428,18 @@
             // Varmista, että Leaflet laskee flex-korkeuden oikein.
             setTimeout(function () { kartta.invalidateSize(); }, 0);
             window.addEventListener('resize', function () { kartta.invalidateSize(); });
+
+            function paivitaArvausKentanLeveys() {
+                if (!arvausKentta || !arvausLabel || !arvausAlue) return;
+                if (window.innerWidth <= 760) return; // mobiilissa 100% leveys
+                var labelLeveys = Math.ceil(arvausLabel.getBoundingClientRect().width);
+                var alueLeveys = Math.floor(arvausAlue.getBoundingClientRect().width);
+                var kentanLeveys = Math.max(240, Math.min(labelLeveys, alueLeveys));
+                arvausKentta.style.width = kentanLeveys + 'px';
+            }
+
+            paivitaArvausKentanLeveys();
+            window.addEventListener('resize', paivitaArvausKentanLeveys);
 
             function haeRajaPaksuus(perusPaksuus) {
                 var zoom = kartta.getZoom();
