@@ -36,135 +36,115 @@
         }
 
         .kompassi-kortti {
-            background: rgba(255, 255, 255, 0.74);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            padding: 10px 10px 8px;
+            background: rgba(255, 255, 255, 0.76);
+            border: 1px solid rgba(0, 0, 0, 0.22);
+            border-radius: 14px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .kompassi {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            border: 2px solid #2f3a45;
-            border-radius: 50%;
-            background: radial-gradient(circle, #fff 42%, #f1f4f7 100%);
-            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+        .kompassi-svg {
+            width: 260px;
+            max-width: 70vw;
+            height: auto;
+            display: block;
         }
 
-        .kompassi::before,
-        .kompassi::after {
-            content: "";
-            position: absolute;
-            background: rgba(47, 58, 69, 0.7);
+        .kompassi-dot-ring {
+            fill: none;
+            stroke: #12141b;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 0.2 14.5;
         }
 
-        .kompassi::before {
-            left: 50%;
-            top: 10px;
-            width: 2px;
-            height: 130px;
-            transform: translateX(-50%);
+        .kompassi-outer-ring {
+            fill: #ffffff;
+            stroke: #11131a;
+            stroke-width: 4;
         }
 
-        .kompassi::after {
-            top: 50%;
-            left: 10px;
-            width: 130px;
-            height: 2px;
-            transform: translateY(-50%);
+        .kompassi-middle-ring {
+            fill: none;
+            stroke: #1a1d26;
+            stroke-width: 3;
         }
 
-        .kompassi-viisto {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 2px;
-            height: 132px;
-            background: rgba(47, 58, 69, 0.45);
-            transform-origin: center;
+        .kompassi-tick-ring {
+            fill: none;
+            stroke: #2b2f3b;
+            stroke-width: 8;
+            stroke-dasharray: 1 7;
         }
 
-        .kompassi-viisto.v1 {
-            transform: translate(-50%, -50%) rotate(45deg);
+        .kompassi-inner-ring {
+            fill: #f4f5f8;
+            stroke: #131722;
+            stroke-width: 3;
         }
 
-        .kompassi-viisto.v2 {
-            transform: translate(-50%, -50%) rotate(-45deg);
+        .kompassi-axis {
+            stroke: #1d2230;
+            stroke-width: 2;
+            opacity: 0.75;
         }
 
-        .kompassi-nuoli {
-            position: absolute;
-            left: 50%;
-            top: 18px;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 9px solid transparent;
-            border-right: 9px solid transparent;
-            border-bottom: 24px solid #d62828;
-            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
+        .kompassi-ruusu-cardinal {
+            fill: #1d2230;
         }
 
-        .kompassi-merkki {
-            position: absolute;
-            color: #1c2732;
-            font-size: 14px;
+        .kompassi-ruusu-vali {
+            fill: #3a4050;
+        }
+
+        .kompassi-keskusta {
+            fill: #11131a;
+            stroke: #11131a;
+            stroke-width: 1;
+        }
+
+        .kompassi-joen-uoma {
+            fill: #ffffff;
+        }
+
+        .kompassi-teksti-paa {
+            fill: #11131a;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 15px;
             font-weight: 700;
-            transform: translate(-50%, -50%);
-            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.2px;
+            text-anchor: middle;
+            dominant-baseline: middle;
         }
 
-        .kompassi-merkki.n { left: 50%; top: 8%; }
-        .kompassi-merkki.ne { left: 78%; top: 22%; }
-        .kompassi-merkki.e { left: 92%; top: 50%; }
-        .kompassi-merkki.se { left: 78%; top: 78%; }
-        .kompassi-merkki.s { left: 50%; top: 92%; }
-        .kompassi-merkki.sw { left: 22%; top: 78%; }
-        .kompassi-merkki.w { left: 8%; top: 50%; }
-        .kompassi-merkki.nw { left: 22%; top: 22%; }
+        .kompassi-teksti-vali {
+            fill: #11131a;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.1px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
 
         .kompassi-selite {
-            max-width: 210px;
+            max-width: 250px;
             text-align: center;
-            font-size: 11px;
-            line-height: 1.25;
+            font-size: 10px;
+            line-height: 1.2;
             color: #26323e;
         }
 
         @media (max-width: 700px) {
-            .kompassi {
-                width: 124px;
-                height: 124px;
-            }
-
-            .kompassi::before {
-                top: 9px;
-                height: 106px;
-            }
-
-            .kompassi::after {
-                left: 9px;
-                width: 106px;
-            }
-
-            .kompassi-viisto {
-                height: 108px;
-            }
-
-            .kompassi-nuoli {
-                top: 14px;
-                border-left-width: 7px;
-                border-right-width: 7px;
-                border-bottom-width: 19px;
+            .kompassi-svg {
+                width: 220px;
             }
 
             .kompassi-selite {
-                max-width: 180px;
+                max-width: 220px;
                 font-size: 10px;
             }
         }
@@ -252,20 +232,41 @@
     <div class="otsikko-rivi">
         <h1>MAAILMAN MAAGINEN MAANARVAUSPELI</h1>
         <div class="kompassi-kortti" aria-label="Kompassi jossa ilmansuunnat ja väli-ilmansuunnat">
-            <div class="kompassi">
-                <span class="kompassi-viisto v1"></span>
-                <span class="kompassi-viisto v2"></span>
-                <span class="kompassi-nuoli"></span>
-                <span class="kompassi-merkki n">P</span>
-                <span class="kompassi-merkki ne">KP</span>
-                <span class="kompassi-merkki e">I</span>
-                <span class="kompassi-merkki se">KI</span>
-                <span class="kompassi-merkki s">E</span>
-                <span class="kompassi-merkki sw">KL</span>
-                <span class="kompassi-merkki w">L</span>
-                <span class="kompassi-merkki nw">PL</span>
-            </div>
-            <p class="kompassi-selite">P=Pohjoinen, I=Ita, E=Etela, L=Lansi, KP=Koillinen, KI=Kaakko, KL=Lounas, PL=Luode</p>
+            <svg class="kompassi-svg" viewBox="0 0 320 320" role="img" aria-label="Kompassi: Pohjoinen, Koillinen, Itä, Kaakko, Etelä, Lounas, Länsi, Luode">
+                <circle class="kompassi-dot-ring" cx="160" cy="160" r="145"></circle>
+                <circle class="kompassi-outer-ring" cx="160" cy="160" r="122"></circle>
+                <circle class="kompassi-middle-ring" cx="160" cy="160" r="108"></circle>
+                <circle class="kompassi-tick-ring" cx="160" cy="160" r="96"></circle>
+                <circle class="kompassi-inner-ring" cx="160" cy="160" r="82"></circle>
+
+                <line class="kompassi-axis" x1="160" y1="52" x2="160" y2="268"></line>
+                <line class="kompassi-axis" x1="52" y1="160" x2="268" y2="160"></line>
+                <line class="kompassi-axis" x1="83" y1="83" x2="237" y2="237"></line>
+                <line class="kompassi-axis" x1="83" y1="237" x2="237" y2="83"></line>
+
+                <polygon class="kompassi-ruusu-cardinal" points="160,28 148,96 172,96"></polygon>
+                <polygon class="kompassi-ruusu-cardinal" points="292,160 224,148 224,172"></polygon>
+                <polygon class="kompassi-ruusu-cardinal" points="160,292 148,224 172,224"></polygon>
+                <polygon class="kompassi-ruusu-cardinal" points="28,160 96,148 96,172"></polygon>
+
+                <polygon class="kompassi-ruusu-vali" points="246,74 202,104 214,116"></polygon>
+                <polygon class="kompassi-ruusu-vali" points="246,246 214,202 202,214"></polygon>
+                <polygon class="kompassi-ruusu-vali" points="74,246 118,214 106,202"></polygon>
+                <polygon class="kompassi-ruusu-vali" points="74,74 106,118 118,106"></polygon>
+
+                <circle class="kompassi-keskusta" cx="160" cy="160" r="68"></circle>
+                <path class="kompassi-joen-uoma" d="M126 184 C147 164, 165 165, 184 180 C169 176, 154 181, 136 201 C128 209, 122 218, 114 226 C119 208, 122 197, 126 184 Z"></path>
+
+                <text class="kompassi-teksti-paa" x="160" y="14">Pohjoinen</text>
+                <text class="kompassi-teksti-vali" x="252" y="68">Koillinen</text>
+                <text class="kompassi-teksti-paa" x="304" y="160">Itä</text>
+                <text class="kompassi-teksti-vali" x="252" y="252">Kaakko</text>
+                <text class="kompassi-teksti-paa" x="160" y="306">Etelä</text>
+                <text class="kompassi-teksti-vali" x="68" y="252">Lounas</text>
+                <text class="kompassi-teksti-paa" x="22" y="160">Länsi</text>
+                <text class="kompassi-teksti-vali" x="68" y="68">Luode</text>
+            </svg>
+            <p class="kompassi-selite">Ilmansuunnat ja väli-ilmansuunnat lunttia varten.</p>
         </div>
     </div>
 
