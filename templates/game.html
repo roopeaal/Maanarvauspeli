@@ -70,6 +70,11 @@
             min-width: 182px;
         }
 
+        .arvaus-alue {
+            width: min(100%, 860px);
+            margin: 6px auto 0;
+        }
+
         .kompassi-kortti {
             background: transparent;
             border: none;
@@ -197,7 +202,7 @@
         }
 
         form {
-            text-align: left;
+            text-align: center;
             margin-top: 0;
         }
 
@@ -338,13 +343,6 @@
     <div class="ylarivi">
         <div class="vasen-ylasarake">
             <h1>Kristoffer Kolumbuksen jäljillä – maanarvauspeli</h1>
-            <form action="/game" method="post">
-                <label for="pelaajan_maa">Arvaa maa kirjoittamalla tai painamalla maata kartasta:</label>
-                <div class="arvaus-rivi">
-                    <input type="text" id="pelaajan_maa" name="pelaajan_maa" required>
-                </div>
-                <input type="submit" value="Arvaa">
-            </form>
         </div>
         <div class="oikea-ylasarake">
             <div class="kompassi-kortti" aria-label="Kompassi jossa ilmansuunnat ja väli-ilmansuunnat">
@@ -356,6 +354,16 @@
             </div>
             <p id="pisteet">Pisteet: {{ points }}</p>
         </div>
+    </div>
+
+    <div class="arvaus-alue">
+        <form action="/game" method="post">
+            <label for="pelaajan_maa">Arvaa maa kirjoittamalla tai painamalla maata kartasta:</label>
+            <div class="arvaus-rivi">
+                <input type="text" id="pelaajan_maa" name="pelaajan_maa" required>
+            </div>
+            <input type="submit" value="Arvaa">
+        </form>
     </div>
 
     <!-- Näytä tulos tai virheviesti -->
