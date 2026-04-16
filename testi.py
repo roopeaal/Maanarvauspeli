@@ -9,6 +9,25 @@ import mysql.connector
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-me-in-production')
 
+YLEISET_MAA_ALIAKSET = {
+    "usa": "united states",
+    "us": "united states",
+    "unitedstates": "united states",
+    "unitedstatesofamerica": "united states",
+    "u.s.a": "united states",
+    "u.s": "united states",
+    "swuden": "sweden",
+    "sweeden": "sweden",
+    "swedn": "sweden",
+    "gremany": "germany",
+    "geramny": "germany",
+    "frnace": "france",
+    "spainn": "spain",
+    "itlay": "italy",
+    "norawy": "norway",
+    "finlad": "finland",
+}
+
 # Tietokantayhteyden avausfunktio
 def get_db_connection():
     conn = mysql.connector.connect(
@@ -224,6 +243,9 @@ def tarkista_maa_tietokannasta(maa):
     conn.close()
     return bool(tulos)
 
+def _normalisoi_maa_syote(teksti):
+    return "".join(char for char in (teksti or "").lower().strip() if char.isalnum())
+
 def hae_lahin_maaehdotus(maa):
     syote = (maa or "").strip()
     if not syote or not any(char.isalpha() for char in syote):
@@ -241,12 +263,33 @@ def hae_lahin_maaehdotus(maa):
     if not maat:
         return None
 
+    syote_normalisoitu = _normalisoi_maa_syote(syote)
     maat_map = {maa_nimi.lower(): maa_nimi for maa_nimi in maat}
+    maat_normalisoitu_map = {_normalisoi_maa_syote(maa_nimi): maa_nimi for maa_nimi in maat}
+
+    alias_osuma = YLEISET_MAA_ALIAKSET.get(syote_normalisoitu)
+    if alias_osuma:
+        alias_avain = _normalisoi_maa_syote(alias_osuma)
+        if alias_avain in maat_normalisoitu_map:
+            return maat_normalisoitu_map[alias_avain]
+
+    if syote_normalisoitu in maat_normalisoitu_map:
+        return maat_normalisoitu_map[syote_normalisoitu]
+
     osumat = difflib.get_close_matches(syote.lower(), list(maat_map.keys()), n=1, cutoff=0.75)
-    if not osumat:
+    if osumat:
+        return maat_map[osumat[0]]
+
+    osumat_normalisoitu = difflib.get_close_matches(
+        syote_normalisoitu,
+        list(maat_normalisoitu_map.keys()),
+        n=1,
+        cutoff=0.82
+    )
+    if not osumat_normalisoitu:
         return None
 
-    return maat_map[osumat[0]]
+    return maat_normalisoitu_map[osumat_normalisoitu[0]]
 
 def hae_maan_koordinaatit(maa):
     conn = get_db_connection()
