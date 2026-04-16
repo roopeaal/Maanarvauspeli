@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response, jsonify
 from geopy.distance import geodesic
+import difflib
 import math
 import os
 import random
@@ -223,6 +224,30 @@ def tarkista_maa_tietokannasta(maa):
     conn.close()
     return bool(tulos)
 
+def hae_lahin_maaehdotus(maa):
+    syote = (maa or "").strip()
+    if not syote or not any(char.isalpha() for char in syote):
+        return None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT name FROM country")
+        maat = [row[0] for row in cursor.fetchall()]
+    finally:
+        cursor.close()
+        conn.close()
+
+    if not maat:
+        return None
+
+    maat_map = {maa_nimi.lower(): maa_nimi for maa_nimi in maat}
+    osumat = difflib.get_close_matches(syote.lower(), list(maat_map.keys()), n=1, cutoff=0.75)
+    if not osumat:
+        return None
+
+    return maat_map[osumat[0]]
+
 def hae_maan_koordinaatit(maa):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -301,7 +326,11 @@ def game():
                                     pisteet=pisteet, pelaajan_maa_koord=pelaajan_maa_koord))
                 return response
             else:
-                tulos = "Maa on kirjoitettu väärin tai sitä ei ole olemassa."
+                ehdotus = hae_lahin_maaehdotus(pelaajan_maa)
+                if ehdotus:
+                    tulos = f'Maa on kirjoitettu väärin, tarkoititko {ehdotus}?'
+                else:
+                    tulos = "Maa on kirjoitettu väärin tai sitä ei ole olemassa."
                 result_category = 'danger'
         else:
             tulos = "Syötä arvaus."
