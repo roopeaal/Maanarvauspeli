@@ -49,16 +49,18 @@
         .ylarivi {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
-            align-items: start;
+            align-items: stretch;
             width: min(100%, 980px);
             gap: 12px;
             margin: 0 auto 2px;
         }
 
         .vasen-ylasarake {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-rows: 1fr auto 1fr auto;
+            align-items: center;
             min-width: 0;
+            width: 100%;
         }
 
         .oikea-ylasarake {
@@ -71,8 +73,16 @@
         }
 
         .arvaus-alue {
-            width: min(100%, 860px);
-            margin: -46px auto 0;
+            width: min(100%, 720px);
+            margin: 0 auto;
+        }
+
+        .vasen-ylasarake h1 {
+            grid-row: 2;
+        }
+
+        .vasen-ylasarake .arvaus-alue {
+            grid-row: 4;
         }
 
         .kompassi-kortti {
@@ -188,6 +198,13 @@
             .ylarivi {
                 grid-template-columns: 1fr;
                 gap: 6px;
+            }
+
+            .vasen-ylasarake {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
             }
 
             .oikea-ylasarake {
@@ -367,6 +384,15 @@
     <div class="ylarivi">
         <div class="vasen-ylasarake">
             <h1>Kristoffer Kolumbuksen jäljillä – maanarvauspeli</h1>
+            <div class="arvaus-alue">
+                <form action="/game" method="post">
+                    <label for="pelaajan_maa">Arvaa maa kirjoittamalla tai painamalla maata kartasta:</label>
+                    <div class="arvaus-rivi">
+                        <input type="text" id="pelaajan_maa" name="pelaajan_maa" required>
+                    </div>
+                    <input type="submit" value="Arvaa">
+                </form>
+            </div>
         </div>
         <div class="oikea-ylasarake">
             <div class="kompassi-kortti" aria-label="Kompassi jossa ilmansuunnat ja väli-ilmansuunnat">
@@ -378,16 +404,6 @@
             </div>
             <p id="pisteet">Pisteet: {{ points }}</p>
         </div>
-    </div>
-
-    <div class="arvaus-alue">
-        <form action="/game" method="post">
-            <label for="pelaajan_maa">Arvaa maa kirjoittamalla tai painamalla maata kartasta:</label>
-            <div class="arvaus-rivi">
-                <input type="text" id="pelaajan_maa" name="pelaajan_maa" required>
-            </div>
-            <input type="submit" value="Arvaa">
-        </form>
     </div>
 
     <!-- Näytä tulos tai virheviesti -->
