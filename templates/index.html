@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lentokenttäarvausmestari</title>
+    <title>Kristoffer Kolumbuksen jäljillä – maanarvauspeli</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/antique-theme.css') }}">
     <style>
         body {
@@ -35,6 +35,18 @@
             color: #495057;
             font-size: 1.1em;
             margin-top: 10px;
+        }
+
+        .lore {
+            max-width: 720px;
+            margin: 14px auto 6px;
+            padding: 12px 14px;
+            text-align: left;
+            line-height: 1.45;
+            background: rgba(247, 236, 214, 0.92);
+            border: 1px solid rgba(113, 81, 45, 0.4);
+            border-radius: 10px;
+            box-shadow: 0 5px 14px rgba(77, 52, 28, 0.12);
         }
 
         form {
@@ -82,8 +94,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>MAAILMAN MAAGINEN MAANARVAUSPELI</h1>
-        <p>Tervetuloa pelaamaan ja testaamaan maantiedon taitojasi.</p>
+        <h1>Kristoffer Kolumbuksen jäljillä – maanarvauspeli</h1>
+        <p class="lore">Kristoffer Kolumbus tunnetaan suurista tutkimusretkistään, mutta nyt hän on itse mennyt piiloon. Sinun tehtäväsi on löytää hänet arvaamalla mihin maahan hän on mennyt. Jokaisen arvauksen jälkeen hän kertoo vain etäisyyden ja ilmansuunnan. Onnistutko pääsemään hänen jäljilleen?</p>
 
         {% with messages = get_flashed_messages() %}
           {% if messages %}
