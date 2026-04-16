@@ -9,7 +9,9 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to top, floralwhite, lightsteelblue) ;
+            background:
+                radial-gradient(140% 115% at 50% -12%, #f6fbff 0%, #d9e8ef 28%, #b4cdbf 56%, #88a596 82%, #6f8f7e 100%),
+                linear-gradient(180deg, #d8e7ef 0%, #bfd2c9 42%, #a2bda9 74%, #8ba590 100%);
             margin: 0;
             padding: 0;
             display: flex;
@@ -17,6 +19,57 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: -12% -18% -8% -18%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            background:
+                radial-gradient(24% 12% at 14% 22%, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(20% 11% at 36% 15%, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0) 72%),
+                radial-gradient(28% 13% at 63% 24%, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 75%),
+                radial-gradient(22% 11% at 84% 18%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 75%),
+                radial-gradient(26% 12% at 49% 38%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 74%);
+            opacity: 0.68;
+            filter: blur(9px);
+            animation: pilviLiikeA 96s linear infinite;
+        }
+
+        body::after {
+            background:
+                radial-gradient(22% 10% at 20% 72%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(18% 9% at 48% 68%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 75%),
+                radial-gradient(26% 11% at 72% 70%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 74%),
+                radial-gradient(19% 9% at 88% 64%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 76%);
+            opacity: 0.54;
+            filter: blur(13px);
+            animation: pilviLiikeB 124s linear infinite;
+        }
+
+        body > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes pilviLiikeA {
+            0% { transform: translate3d(-2%, 0, 0); }
+            50% { transform: translate3d(2.5%, 1.2%, 0); }
+            100% { transform: translate3d(-2%, 0, 0); }
+        }
+
+        @keyframes pilviLiikeB {
+            0% { transform: translate3d(2%, 0.8%, 0); }
+            50% { transform: translate3d(-2.8%, -0.8%, 0); }
+            100% { transform: translate3d(2%, 0.8%, 0); }
         }
 
         h1 {
