@@ -15,8 +15,16 @@ Flask + MySQL -pohjainen lentokentta-aiheinen arvauspeli.
    - `export DB_USER=root`
    - `export DB_PASSWORD=oma_salasana`
    - `export FLASK_SECRET_KEY=oma_satunnainen_avain`
-3. Kaynnista:
+3. Alusta tietokanta:
+   - `mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" < sql/init.sql`
+4. Kaynnista:
    - `python testi.py`
+
+## Tietokannan init-skripti
+
+Repo sisaltaa tiedoston `sql/init.sql`, joka:
+- luo taulut `game`, `country` ja `airport`
+- lisaa pienen perusdatan (maat + large_airport), jotta peli toimii heti
 
 ## Deploy Renderiin
 
@@ -31,7 +39,9 @@ Tama repo sisaltaa valmiin `render.yaml`-tiedoston.
    - `DB_USER`
    - `DB_PASSWORD`
    - (`DB_PORT` on oletuksena 3306)
-5. Deployn jalkeen sovellus kaynnistyy komennolla:
+5. Aja tietokannan init kerran:
+   - `mysql -h <DB_HOST> -P 3306 -u <DB_USER> -p <DB_NAME> < sql/init.sql`
+6. Deployn jalkeen sovellus kaynnistyy komennolla:
    - `gunicorn --bind 0.0.0.0:$PORT testi:app`
 
 ## Tarkeaa

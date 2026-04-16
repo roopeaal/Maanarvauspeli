@@ -133,13 +133,15 @@ def arvo_uusi_maa_ja_kentta():
             GROUP BY country.name, country.latitude, country.longitude;
         """)
         tiedot = cursor.fetchall()
-        arvottu_tieto = random.choice(tiedot)
-        cursor.close()
-        conn.close()
-        return arvottu_tieto  # Palautetaan (maa, lentokenttä, latitude, longitude)
+        if not tiedot:
+            return None
+        return random.choice(tiedot)  # Palautetaan (maa, lentokenttä, latitude, longitude)
     except Exception as e:
         print("Virhe uutta maata ja kenttää arvottaessa:", e)
         return None
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/get_largest_airport_name')
@@ -244,6 +246,10 @@ def game():
     # Jos koordinaatit puuttuvat, arvotaan uudet maat ja koordinaatit
     if arvottu_maa is None or arvottu_latitude is None or arvottu_longitude is None:
         arvottu_tieto = arvo_uusi_maa_ja_kentta()
+        if arvottu_tieto is None:
+            tulos = "Tietokannassa ei ole maita/lentokenttia. Aja sql/init.sql ensin."
+            result_category = 'danger'
+            return make_response(render_template('game.html', result=tulos, result_category=result_category, points=0))
         arvottu_maa = arvottu_tieto[0]
         arvottu_latitude = str(arvottu_tieto[2])
         arvottu_longitude = str(arvottu_tieto[3])
