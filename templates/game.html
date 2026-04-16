@@ -258,7 +258,8 @@
             border-radius: 5px;
         }
 
-        input[type="submit"] {
+        input[type="submit"],
+        #uusi-peli-arvaus-btn {
             background-color: #5a3f22;
             color: #fff;
             padding: 10px 20px;
@@ -271,7 +272,8 @@
             margin-right: auto;
         }
 
-        input[type="submit"]:hover {
+        input[type="submit"]:hover,
+        #uusi-peli-arvaus-btn:hover {
             background-color: #74542f;
         }
 
@@ -402,9 +404,13 @@
                 <form action="/game" method="post">
                     <label for="pelaajan_maa">Arvaa maa kirjoittamalla tai painamalla maata kartasta:</label>
                     <div class="arvaus-rivi">
-                        <input type="text" id="pelaajan_maa" name="pelaajan_maa" required>
+                        <input type="text" id="pelaajan_maa" name="pelaajan_maa" required {% if kierros_voitettu %}disabled{% endif %}>
                     </div>
-                    <input type="submit" value="Arvaa">
+                    {% if kierros_voitettu %}
+                        <button type="button" id="uusi-peli-arvaus-btn">Aloita uusi peli</button>
+                    {% else %}
+                        <input type="submit" value="Arvaa">
+                    {% endif %}
                 </form>
             </div>
         </div>
@@ -429,7 +435,7 @@
     <div id="kartta"></div>
 
     <!-- Lisää "Vihje" -napin ja suurimman lentokentän nimen näyttävän elementin -->
-    <button id="vihje-nappi" type="button" {% if vihje_kaytetty %}disabled{% endif %}>Vihje -300p</button>
+    <button id="vihje-nappi" type="button" {% if vihje_kaytetty or kierros_voitettu %}disabled{% endif %}>Vihje -300p</button>
     <p id="lentokentta-nimi" {% if vihje_teksti %}style="display: block;"{% endif %}>{{ vihje_teksti or '' }}</p>
 
     <div class="toiminto-rivi">
@@ -446,17 +452,27 @@
             // Luo kartta
             var kartta = L.map('kartta').setView([0, 0], 2); // Aseta alkuarvo ja zoom-taso
             var arvatutMaat = {{ arvatut_maat|default([], true)|tojson }};
+            var maaNimiMap = {{ maa_nimi_map|default({}, true)|tojson }};
+            var karttaAliasit = {{ kartta_aliasit|default({}, true)|tojson }};
             var sallitutMaat = new Set(
                 ({{ sallitut_iso_koodit|default([], true)|tojson }} || []).map(function (koodi) {
                     return String(koodi || '').toUpperCase();
                 })
             );
+            var kierrosVoitettu = {{ kierros_voitettu|default(false, true)|tojson }};
             var oikeaMaaIso = "{{ oikea_maa_iso|default('', true) }}".toUpperCase();
             var valittuMaaIso = null;
             var maatLayer = null;
             var arvausKentta = document.getElementById("pelaajan_maa");
             var arvausLabel = document.querySelector('label[for="pelaajan_maa"]');
             var arvausAlue = document.querySelector('.arvaus-alue');
+
+            function normalisoiMaaSyote(teksti) {
+                if (!teksti) return '';
+                return String(teksti)
+                    .toLowerCase()
+                    .replace(/[^\p{L}\p{N}]/gu, '');
+            }
 
             // Lisää taustakartta ilman tekstejä (no labels), vaaleansinisellä merellä
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
@@ -568,8 +584,17 @@
                                 layer.on('click', function () {
                                     valittuMaaIso = (props['ISO3166-1-Alpha-2'] || '').toUpperCase() || null;
                                     var maanNimi = (props.name || '').trim();
-                                    if (maanNimi && arvausKentta) {
-                                        arvausKentta.value = maanNimi;
+                                    var normalisoituNimi = normalisoiMaaSyote(maanNimi);
+                                    var korjattuNimi = maaNimiMap[normalisoituNimi] || null;
+                                    if (!korjattuNimi) {
+                                        var aliasKohde = karttaAliasit[normalisoituNimi];
+                                        if (aliasKohde) {
+                                            korjattuNimi = maaNimiMap[aliasKohde] || aliasKohde;
+                                        }
+                                    }
+                                    var naytettavaNimi = korjattuNimi || maanNimi;
+                                    if (naytettavaNimi && arvausKentta && !kierrosVoitettu) {
+                                        arvausKentta.value = naytettavaNimi;
                                         arvausKentta.focus();
                                     }
                                     paivitaMaatTyylit();
@@ -660,13 +685,10 @@
             var vihjeNappi = document.getElementById("vihje-nappi");
             vihjeNappi.addEventListener("click", naytaLentokenttaNimi);
 
-            // Etsi "Aloita uusi peli" -linkki
-            var uusiPeliLinkki = document.getElementById("uusi-peli-linkki");
-
-            // Lisää klikkaustapahtumankäsittelijä linkille
-            uusiPeliLinkki.addEventListener("click", function (event) {
-                event.preventDefault(); // Estä linkin oletustoiminto (navigointi)
-
+            function aloitaUusiPeli(event) {
+                if (event) {
+                    event.preventDefault(); // Estä linkin oletustoiminto (navigointi)
+                }
                 // Tee pyyntö uuden maan arpomiseksi
                 fetch('/new_game')  // Korvaa '/new_game' tarvittavalla reitillä palvelimellasi
                     .then(response => response.json())
@@ -681,7 +703,16 @@
                     .catch(error => {
                         console.error('Virhe uutta peliä aloittaessa: ' + error);
                     });
-            });
+            }
+
+            // Etsi "Aloita uusi peli" -linkki
+            var uusiPeliLinkki = document.getElementById("uusi-peli-linkki");
+            uusiPeliLinkki.addEventListener("click", aloitaUusiPeli);
+
+            var uusiPeliArvausNappi = document.getElementById("uusi-peli-arvaus-btn");
+            if (uusiPeliArvausNappi) {
+                uusiPeliArvausNappi.addEventListener("click", aloitaUusiPeli);
+            }
         });
     </script>
 </body>

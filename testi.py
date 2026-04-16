@@ -26,6 +26,7 @@ YLEISET_MAA_ALIAKSET = {
     "itlay": "italy",
     "norawy": "norway",
     "finlad": "finland",
+    "republicofserbia": "serbia",
 }
 VIHJE_HINTA = 300
 
@@ -190,6 +191,11 @@ def get_largest_airport_name():
     arvottu_maa = request.cookies.get('arvottu_maa')
     username = request.cookies.get('username')
     vihje_kaytetty = request.cookies.get('vihje_kaytetty') == '1'
+    arvatut_maat = _hae_arvatut_maat_cookie()
+    oikea_maa_iso = request.cookies.get('oikea_maa_iso', '').strip().upper()
+    kierros_voitettu = (
+        len(oikea_maa_iso) == 2 and oikea_maa_iso.isalpha() and oikea_maa_iso in arvatut_maat
+    )
 
     # Tarkista, että kierroksen_Maa on asetettu evästeisiin
     if arvottu_maa:
@@ -200,7 +206,7 @@ def get_largest_airport_name():
         points = None
         if username:
             points = hae_kayttajan_pisteet(username)
-            if not vihje_kaytetty:
+            if not vihje_kaytetty and not kierros_voitettu:
                 points -= VIHJE_HINTA
                 lisaa_pisteet(username, points)
 
@@ -369,6 +375,35 @@ def hae_sallitut_iso_koodit():
         cursor.close()
         conn.close()
 
+def hae_normalisoitu_maa_nimi_map():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT name FROM country")
+        nimi_map = {}
+        for row in cursor.fetchall():
+            if not row:
+                continue
+            nimi = (row[0] or "").strip()
+            if not nimi:
+                continue
+            avain = _normalisoi_maa_syote(nimi)
+            if avain:
+                nimi_map[avain] = nimi
+        return nimi_map
+    finally:
+        cursor.close()
+        conn.close()
+
+def hae_kartta_aliasit():
+    alias_map = {}
+    for alias, kohde in YLEISET_MAA_ALIAKSET.items():
+        alias_avain = _normalisoi_maa_syote(alias)
+        kohde_avain = _normalisoi_maa_syote(kohde)
+        if alias_avain and kohde_avain:
+            alias_map[alias_avain] = kohde_avain
+    return alias_map
+
 def _hae_arvatut_maat_cookie():
     arvatut_maat_raaka = request.cookies.get('arvatut_maat', '')
     arvatut_maat = []
@@ -391,6 +426,8 @@ def game():
         return redirect(url_for('index'))
     _varmista_pelaaja(username)
     sallitut_iso_koodit = hae_sallitut_iso_koodit()
+    maa_nimi_map = hae_normalisoitu_maa_nimi_map()
+    kartta_aliasit = hae_kartta_aliasit()
 
     # Tarkistetaan, onko arvottu maa ja koordinaatit jo tallennettu evästeisiin
     arvottu_maa = request.cookies.get('arvottu_maa')
@@ -401,6 +438,7 @@ def game():
     oikea_maa_iso = request.cookies.get('oikea_maa_iso', '').strip().upper()
     if not (len(oikea_maa_iso) == 2 and oikea_maa_iso.isalpha()):
         oikea_maa_iso = None
+    kierros_voitettu = bool(oikea_maa_iso and oikea_maa_iso in arvatut_maat)
     vihje_teksti = None
 
     if vihje_kaytetty and arvottu_maa:
@@ -423,6 +461,9 @@ def game():
                 vihje_kaytetty=vihje_kaytetty,
                 arvatut_maat=arvatut_maat,
                 sallitut_iso_koodit=sallitut_iso_koodit,
+                maa_nimi_map=maa_nimi_map,
+                kartta_aliasit=kartta_aliasit,
+                kierros_voitettu=False,
                 oikea_maa_iso=oikea_maa_iso,
                 oikea_osuma=False
             ))
@@ -439,6 +480,9 @@ def game():
             vihje_kaytetty=vihje_kaytetty,
             arvatut_maat=[],
             sallitut_iso_koodit=sallitut_iso_koodit,
+            maa_nimi_map=maa_nimi_map,
+            kartta_aliasit=kartta_aliasit,
+            kierros_voitettu=False,
             oikea_maa_iso=None,
             oikea_osuma=False
         ))
@@ -464,16 +508,21 @@ def game():
             if tarkista_maa_tietokannasta(pelaajan_maa):
                 pelaajan_maa_koord = hae_maan_koordinaatit(pelaajan_maa)
                 pelaajan_maa_koord = tuple(map(float, pelaajan_maa_koord))  # Muuta merkkijonoista liukuluvuiksi
+                pisteet = 0
                 maan_iso_koodi = hae_maan_iso_koodi(pelaajan_maa)
                 if maan_iso_koodi:
                     maan_iso_koodi = maan_iso_koodi.upper()
-                    if maan_iso_koodi not in arvatut_maat:
-                        arvatut_maat.append(maan_iso_koodi)
+                onko_jo_arvattu = bool(maan_iso_koodi and maan_iso_koodi in arvatut_maat)
+                if maan_iso_koodi and not onko_jo_arvattu:
+                    arvatut_maat.append(maan_iso_koodi)
                 arvottu_latitude = float(arvottu_latitude)  # Muuta merkkijono liukuluvaksi
                 arvottu_longitude = float(arvottu_longitude)  # Muuta merkkijono liukuluvaksi
                 etaisyys, ilmansuunta = laske_etaisyys_ja_ilmansuunta(pelaajan_maa_koord,
                                                                       (arvottu_latitude, arvottu_longitude))
-                if pelaajan_maa.lower() == arvottu_maa.lower():
+                if onko_jo_arvattu:
+                    result_category = 'info'
+                    tulos = f'Olet jo arvannut jo maata "{pelaajan_maa}". Kolumbus on {etaisyys} km päässä {ilmansuunta}.'
+                elif pelaajan_maa.lower() == arvottu_maa.lower():
                     # Lisää pisteet käyttäjälle
                     pisteet = 0
                     lisaa_pisteet(username, user_points)  # Päivitä pisteet tietokantaan
@@ -491,12 +540,16 @@ def game():
                     result_category = 'info'
                     tulos = f'Arvauksesi "{pelaajan_maa}" on väärin. Kolumbus on {etaisyys} km päässä {ilmansuunta}.'
 
+                kierros_voitettu = bool(oikea_maa_iso and oikea_maa_iso in arvatut_maat)
+
                 # Tallenna pisteet evästeisiin
                 response = make_response(
                     render_template('game.html', result=tulos, result_category=result_category, points=user_points,
                                     pisteet=pisteet, pelaajan_maa_koord=pelaajan_maa_koord,
                                     vihje_teksti=vihje_teksti, vihje_kaytetty=vihje_kaytetty,
                                     arvatut_maat=arvatut_maat, sallitut_iso_koodit=sallitut_iso_koodit,
+                                    maa_nimi_map=maa_nimi_map, kartta_aliasit=kartta_aliasit,
+                                    kierros_voitettu=kierros_voitettu,
                                     oikea_maa_iso=oikea_maa_iso,
                                     oikea_osuma=oikea_osuma))
                 _tallenna_arvatut_maat_cookie(response, arvatut_maat)
@@ -524,6 +577,9 @@ def game():
         vihje_kaytetty=vihje_kaytetty,
         arvatut_maat=arvatut_maat,
         sallitut_iso_koodit=sallitut_iso_koodit,
+        maa_nimi_map=maa_nimi_map,
+        kartta_aliasit=kartta_aliasit,
+        kierros_voitettu=kierros_voitettu,
         oikea_maa_iso=oikea_maa_iso,
         oikea_osuma=oikea_osuma
     ))
