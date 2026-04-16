@@ -62,55 +62,57 @@ def execute_query(query, values=None):
 
 @app.route('/')
 def index():
-    username = request.cookies.get('username')
+    username = request.cookies.get('username', '')
     return render_template('index.html', username=username)
+
+def _varmista_pelaaja(username):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id FROM game WHERE username = %s", (username,))
+        loytyi = cursor.fetchone()
+        if not loytyi:
+            cursor.execute(
+                "INSERT INTO game (username, password, points, hiscore) VALUES (%s, %s, %s, %s)",
+                (username, '', 1000, 0)
+            )
+            conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/set_name', methods=['POST'])
+def set_name():
+    username = request.form.get('username', '').strip()
+    if not username:
+        flash('Anna nimi ennen pelaamisen aloitusta.', 'danger')
+        return redirect(url_for('index'))
+
+    if len(username) > 50:
+        username = username[:50]
+
+    _varmista_pelaaja(username)
+    lisaa_pisteet(username, 1000)
+
+    response = make_response(redirect(url_for('game')))
+    response.set_cookie('username', username)
+    response.delete_cookie('vihje_kaytetty')
+    response.delete_cookie('arvatut_maat')
+    response.delete_cookie('arvottu_maa')
+    response.delete_cookie('arvottu_latitude')
+    response.delete_cookie('arvottu_longitude')
+    return response
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    try:
-        if request.method == 'POST':
-            username = request.form['username']
-            password = request.form['password']
-
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, password FROM game WHERE username=%s", (username,))
-            existing_user = cursor.fetchone()
-
-            if existing_user:
-                flash('Käyttäjänimi on jo käytössä. Valitse toinen.', 'danger')
-            else:
-                cursor.execute("INSERT INTO game (username, password) VALUES (%s, %s)", (username, password))
-                conn.commit()
-                flash('Rekisteröityminen onnistui. Voit nyt kirjautua sisään.', 'success')
-                return redirect(url_for('login'))
-
-            cursor.close()
-            conn.close()
-
-    except Exception as e:
-        flash(str(e), 'danger')
-
-    return render_template('register.html')
+    return redirect(url_for('index'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if check_login(username, password):
-            response = make_response(redirect(url_for('game')))
-            response.set_cookie('username', username)
-
-            # Lisää tässä vaiheessa pisteiden päivitys
-            lisaa_pisteet(username, 1000)
-
-            return response
-        else:
-            pass
-
-    return render_template('login.html')
+    return redirect(url_for('index'))
 
 
 def check_login(username, password):
@@ -133,12 +135,9 @@ def logout():
     response.delete_cookie('username')
     response.delete_cookie('vihje_kaytetty')
     response.delete_cookie('arvatut_maat')
-
-    # Nollaa käyttäjän pistemäärä
-    username = request.cookies.get('username')
-    if username:
-        lisaa_pisteet(username, 0)
-
+    response.delete_cookie('arvottu_maa')
+    response.delete_cookie('arvottu_latitude')
+    response.delete_cookie('arvottu_longitude')
     return response
 
 
@@ -369,6 +368,9 @@ def _tallenna_arvatut_maat_cookie(response, arvatut_maat):
 @app.route('/game', methods=['GET', 'POST'])
 def game():
     username = request.cookies.get('username')
+    if not username:
+        return redirect(url_for('index'))
+    _varmista_pelaaja(username)
 
     # Tarkistetaan, onko arvottu maa ja koordinaatit jo tallennettu evästeisiin
     arvottu_maa = request.cookies.get('arvottu_maa')
