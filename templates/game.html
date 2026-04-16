@@ -24,6 +24,8 @@
             color: #333;
             margin: 0;
             letter-spacing: 0.8px;
+            line-height: 1.05;
+            max-width: 56vw;
         }
 
         .otsikko-rivi {
@@ -31,7 +33,7 @@
             align-items: center;
             justify-content: center;
             gap: 18px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             margin: 10px 0 4px;
         }
 
@@ -44,6 +46,7 @@
             flex-direction: column;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         .kompassi-svg {
@@ -139,13 +142,22 @@
         }
 
         @media (max-width: 700px) {
+            h1 {
+                font-size: 24px;
+                max-width: 48vw;
+            }
+
+            .otsikko-rivi {
+                gap: 10px;
+            }
+
             .kompassi-svg {
-                width: 220px;
+                width: 176px;
             }
 
             .kompassi-selite {
-                max-width: 220px;
-                font-size: 10px;
+                max-width: 170px;
+                font-size: 9px;
             }
         }
 
@@ -321,11 +333,11 @@
                                 var isoKoodi = ((feature.properties || {})['ISO3166-1-Alpha-2'] || '').toUpperCase();
                                 var onArvattu = arvatutMaat.includes(isoKoodi);
                                 return {
-                                    color: onArvattu ? '#b00020' : '#4a4a4a',
-                                    weight: onArvattu ? 2.0 : 1.4,
-                                    opacity: 0.95,
+                                    color: onArvattu ? '#b2202b' : '#5a5a5a',
+                                    weight: onArvattu ? 1.6 : 1.1,
+                                    opacity: 0.88,
                                     fillColor: onArvattu ? '#ff3b30' : '#ffffff',
-                                    fillOpacity: onArvattu ? 0.45 : 0.02
+                                    fillOpacity: onArvattu ? 0.34 : 0.015
                                 };
                             }
                         }).addTo(kartta);
