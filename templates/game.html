@@ -317,6 +317,9 @@
             // Luo kartta
             var kartta = L.map('kartta').setView([0, 0], 2); // Aseta alkuarvo ja zoom-taso
             var arvatutMaat = {{ arvatut_maat|default([], true)|tojson }};
+            var valittuMaaIso = null;
+            var maatLayer = null;
+            var arvausKentta = document.getElementById("pelaajan_maa");
 
             // Lisää taustakartta ilman tekstejä (no labels)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
@@ -324,23 +327,76 @@
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(kartta);
 
+            function haeRajaPaksuus(perusPaksuus) {
+                var zoom = kartta.getZoom();
+                if (zoom <= 2) return perusPaksuus * 0.55;
+                if (zoom <= 4) return perusPaksuus * 0.75;
+                if (zoom <= 6) return perusPaksuus * 0.95;
+                return perusPaksuus * 1.12;
+            }
+
+            function haeMaanTyyli(feature) {
+                var props = feature.properties || {};
+                var isoKoodi = (props['ISO3166-1-Alpha-2'] || '').toUpperCase();
+                var onValittu = valittuMaaIso && valittuMaaIso === isoKoodi;
+                var onArvattu = arvatutMaat.includes(isoKoodi);
+
+                if (onValittu) {
+                    return {
+                        color: '#6f7682',
+                        weight: haeRajaPaksuus(1.5),
+                        opacity: 0.92,
+                        fillColor: '#a8adb6',
+                        fillOpacity: 0.42
+                    };
+                }
+
+                if (onArvattu) {
+                    return {
+                        color: '#b2202b',
+                        weight: haeRajaPaksuus(1.4),
+                        opacity: 0.86,
+                        fillColor: '#ff3b30',
+                        fillOpacity: 0.30
+                    };
+                }
+
+                return {
+                    color: '#5b5f67',
+                    weight: haeRajaPaksuus(0.95),
+                    opacity: 0.76,
+                    fillColor: '#ffffff',
+                    fillOpacity: 0.012
+                };
+            }
+
+            function paivitaMaatTyylit() {
+                if (maatLayer) {
+                    maatLayer.setStyle(haeMaanTyyli);
+                }
+            }
+
             function piirraMaidenRajatJaArvatutMaat() {
                 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
                     .then(response => response.json())
                     .then(data => {
-                        L.geoJSON(data, {
-                            style: function (feature) {
-                                var isoKoodi = ((feature.properties || {})['ISO3166-1-Alpha-2'] || '').toUpperCase();
-                                var onArvattu = arvatutMaat.includes(isoKoodi);
-                                return {
-                                    color: onArvattu ? '#b2202b' : '#5a5a5a',
-                                    weight: onArvattu ? 1.6 : 1.1,
-                                    opacity: 0.88,
-                                    fillColor: onArvattu ? '#ff3b30' : '#ffffff',
-                                    fillOpacity: onArvattu ? 0.34 : 0.015
-                                };
+                        maatLayer = L.geoJSON(data, {
+                            style: haeMaanTyyli,
+                            onEachFeature: function (feature, layer) {
+                                layer.on('click', function () {
+                                    var props = feature.properties || {};
+                                    valittuMaaIso = (props['ISO3166-1-Alpha-2'] || '').toUpperCase() || null;
+                                    var maanNimi = (props.name || '').trim();
+                                    if (maanNimi && arvausKentta) {
+                                        arvausKentta.value = maanNimi;
+                                        arvausKentta.focus();
+                                    }
+                                    paivitaMaatTyylit();
+                                });
                             }
                         }).addTo(kartta);
+
+                        kartta.on('zoomend', paivitaMaatTyylit);
                     })
                     .catch(error => {
                         console.error('Virhe maiden rajojen latauksessa: ' + error);
