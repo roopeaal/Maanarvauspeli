@@ -235,6 +235,24 @@
             background-color: #74542f;
         }
 
+        .toiminto-rivi {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .toiminto-rivi a {
+            display: inline-block;
+            margin-top: 0;
+            width: auto;
+            min-width: 180px;
+            max-width: none;
+            padding: 10px 18px;
+        }
+
         #kartta {
             height: 400px;
             width: min(100%, 980px);
@@ -295,12 +313,11 @@
     <!-- Näytä pisteet -->
     <p id="pisteet">Pisteet: {{ points }}</p>
 
-    <!-- Lisää "Aloita uusi peli" -linkki -->
-    <a href="#" id="uusi-peli-linkki">Aloita uusi peli</a>
-
-    <!-- Lisää linkit navigointiin -->
-    <a href="/leaderboard">Pistetaulukko</a>
-    <a href="/logout">Vaihda nimeä</a>
+    <div class="toiminto-rivi">
+        <a href="#" id="uusi-peli-linkki">Aloita uusi peli</a>
+        <a href="/leaderboard">Pistetaulukko</a>
+        <a href="/logout">Vaihda nimeä</a>
+    </div>
     </div>
 
     <!-- Leaflet.js ja JavaScript-koodi -->
