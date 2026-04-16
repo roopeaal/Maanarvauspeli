@@ -121,8 +121,8 @@
     <div id="kartta"></div>
 
     <!-- Lisää "Vihje" -napin ja suurimman lentokentän nimen näyttävän elementin -->
-    <button id="vihje-nappi">Vihje</button>
-    <p id="lentokentta-nimi"></p>
+    <button id="vihje-nappi" type="button" {% if vihje_kaytetty %}disabled{% endif %}>Vihje -300p</button>
+    <p id="lentokentta-nimi" {% if vihje_teksti %}style="display: block;"{% endif %}>{{ vihje_teksti or '' }}</p>
 
     <!-- Näytä pisteet -->
     <p id="pisteet">Pisteet: {{ points }}</p>
@@ -193,6 +193,10 @@
                         var lentokenttaNimiElementti = document.getElementById("lentokentta-nimi");
                         lentokenttaNimiElementti.innerHTML = "Maan suurin lentokenttä on: " + lentokenttaNimi;
                         lentokenttaNimiElementti.style.display = "block";
+                        if (data.points !== null && data.points !== undefined) {
+                            document.getElementById("pisteet").innerHTML = "Pisteet: " + data.points;
+                        }
+                        vihjeNappi.disabled = true;
                     })
                     .catch(error => {
                         console.error('Virhe haettaessa suurinta lentokenttää: ' + error);

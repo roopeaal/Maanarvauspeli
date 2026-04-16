@@ -27,6 +27,7 @@ YLEISET_MAA_ALIAKSET = {
     "norawy": "norway",
     "finlad": "finland",
 }
+VIHJE_HINTA = 300
 
 # Tietokantayhteyden avausfunktio
 def get_db_connection():
@@ -130,6 +131,7 @@ def check_login(username, password):
 def logout():
     response = make_response(redirect(url_for('index')))
     response.delete_cookie('username')
+    response.delete_cookie('vihje_kaytetty')
 
     # Nollaa käyttäjän pistemäärä
     username = request.cookies.get('username')
@@ -164,26 +166,45 @@ def arvo_uusi_maa_ja_kentta():
         conn.close()
 
 
-@app.route('/get_largest_airport_name')
-def get_largest_airport_name():
-    arvottu_maa = request.cookies.get('arvottu_maa')
-
-    # Tarkista, että kierroksen_Maa on asetettu evästeisiin
-    if arvottu_maa:
-        # Haetaan suurimman lentokentän nimi kierroksen_Maa:n perusteella
-        conn = get_db_connection()
-        cursor = conn.cursor()
+def hae_suurimman_lentokentan_nimi(maa):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
         cursor.execute("""
             SELECT MAX(airport.name) AS largest_airport
             FROM country
             INNER JOIN airport ON country.iso_country = airport.iso_country
             WHERE airport.type = 'large_airport' AND country.name = %s
-        """, (arvottu_maa,))
-        largest_airport_name = cursor.fetchone()[0]
+        """, (maa,))
+        tulos = cursor.fetchone()
+        return tulos[0] if tulos else None
+    finally:
         cursor.close()
         conn.close()
 
-        return jsonify({'largest_airport_name': largest_airport_name})
+
+@app.route('/get_largest_airport_name')
+def get_largest_airport_name():
+    arvottu_maa = request.cookies.get('arvottu_maa')
+    username = request.cookies.get('username')
+    vihje_kaytetty = request.cookies.get('vihje_kaytetty') == '1'
+
+    # Tarkista, että kierroksen_Maa on asetettu evästeisiin
+    if arvottu_maa:
+        largest_airport_name = hae_suurimman_lentokentan_nimi(arvottu_maa)
+        if not largest_airport_name:
+            return jsonify({'largest_airport_name': 'Arvaa ensin maa.'})
+
+        points = None
+        if username:
+            points = hae_kayttajan_pisteet(username)
+            if not vihje_kaytetty:
+                points -= VIHJE_HINTA
+                lisaa_pisteet(username, points)
+
+        response = make_response(jsonify({'largest_airport_name': largest_airport_name, 'points': points}))
+        response.set_cookie('vihje_kaytetty', '1')
+        return response
     else:
         return jsonify({'largest_airport_name': 'Arvaa ensin maa.'})
 
@@ -324,6 +345,13 @@ def game():
     arvottu_maa = request.cookies.get('arvottu_maa')
     arvottu_latitude = request.cookies.get('arvottu_latitude')
     arvottu_longitude = request.cookies.get('arvottu_longitude')
+    vihje_kaytetty = request.cookies.get('vihje_kaytetty') == '1'
+    vihje_teksti = None
+
+    if vihje_kaytetty and arvottu_maa:
+        largest_airport_name = hae_suurimman_lentokentan_nimi(arvottu_maa)
+        if largest_airport_name:
+            vihje_teksti = f"Maan suurin lentokenttä on: {largest_airport_name}"
 
     # Jos koordinaatit puuttuvat, arvotaan uudet maat ja koordinaatit
     if arvottu_maa is None or arvottu_latitude is None or arvottu_longitude is None:
@@ -331,13 +359,26 @@ def game():
         if arvottu_tieto is None:
             tulos = "Tietokannassa ei ole maita/lentokenttia. Aja sql/init.sql ensin."
             result_category = 'danger'
-            return make_response(render_template('game.html', result=tulos, result_category=result_category, points=0))
+            return make_response(render_template(
+                'game.html',
+                result=tulos,
+                result_category=result_category,
+                points=0,
+                vihje_teksti=vihje_teksti,
+                vihje_kaytetty=vihje_kaytetty
+            ))
         arvottu_maa = arvottu_tieto[0]
         arvottu_latitude = str(arvottu_tieto[2])
         arvottu_longitude = str(arvottu_tieto[3])
 
         # Tallennetaan uudet koordinaatit evästeisiin
-        response = make_response(render_template('game.html'))
+        user_points = hae_kayttajan_pisteet(username) if username else 0
+        response = make_response(render_template(
+            'game.html',
+            points=user_points,
+            vihje_teksti=vihje_teksti,
+            vihje_kaytetty=vihje_kaytetty
+        ))
         response.set_cookie('arvottu_maa', arvottu_maa)
         response.set_cookie('arvottu_latitude', arvottu_latitude)
         response.set_cookie('arvottu_longitude', arvottu_longitude)
@@ -380,7 +421,8 @@ def game():
                 # Tallenna pisteet evästeisiin
                 response = make_response(
                     render_template('game.html', result=tulos, result_category=result_category, points=user_points,
-                                    pisteet=pisteet, pelaajan_maa_koord=pelaajan_maa_koord))
+                                    pisteet=pisteet, pelaajan_maa_koord=pelaajan_maa_koord,
+                                    vihje_teksti=vihje_teksti, vihje_kaytetty=vihje_kaytetty))
                 return response
             else:
                 ehdotus = hae_lahin_maaehdotus(pelaajan_maa)
@@ -394,7 +436,14 @@ def game():
 
     # Tallenna pisteet evästeisiin
     user_points = hae_kayttajan_pisteet(username)
-    response = make_response(render_template('game.html', result=tulos, result_category=result_category, points=user_points))
+    response = make_response(render_template(
+        'game.html',
+        result=tulos,
+        result_category=result_category,
+        points=user_points,
+        vihje_teksti=vihje_teksti,
+        vihje_kaytetty=vihje_kaytetty
+    ))
     return response
 
 
@@ -436,6 +485,7 @@ def start_new_game():
             response = make_response(jsonify({'success': True, 'arvottu_maa': arvottu_maa}))
             response.delete_cookie('arvottu_latitude')
             response.delete_cookie('arvottu_longitude')
+            response.delete_cookie('vihje_kaytetty')
             return response
         else:
             response = jsonify({'success': False})
@@ -495,6 +545,7 @@ def new_game():
             response = make_response(jsonify({'success': True, 'arvottu_maa': arvottu_maa}))
             response.delete_cookie('arvottu_latitude')
             response.delete_cookie('arvottu_longitude')
+            response.delete_cookie('vihje_kaytetty')
             return response
         else:
             response = jsonify({'success': False})
