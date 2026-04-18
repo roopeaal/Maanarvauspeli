@@ -39,11 +39,11 @@
 
         .lore {
             position: relative;
-            max-width: 740px;
+            max-width: 700px;
             margin: 14px auto 8px;
-            width: min(100%, 740px);
+            width: min(100%, 700px);
             aspect-ratio: 740 / 456;
-            padding: clamp(52px, 8vw, 64px) clamp(108px, 15vw, 132px) clamp(46px, 7vw, 58px);
+            padding: clamp(80px, 11vw, 94px) clamp(100px, 14vw, 122px) clamp(22px, 3.8vw, 30px);
             text-align: left;
             background-image: url('{{ url_for('static', filename='images/lore-scroll-clean.png') }}');
             background-position: center;
@@ -62,8 +62,8 @@
             font-family: "Apple Chancery", "Snell Roundhand", "Bradley Hand", "Book Antiqua", "Palatino Linotype", serif;
             font-style: italic;
             font-weight: 500;
-            font-size: clamp(1.08em, 1.55vw, 1.23em);
-            line-height: 1.54;
+            font-size: clamp(1em, 1.35vw, 1.14em);
+            line-height: 1.44;
             letter-spacing: 0.2px;
             text-shadow: 0.3px 0.8px 0 rgba(255, 246, 222, 0.26);
             max-width: 100%;
@@ -81,7 +81,7 @@
 
         @media (max-width: 700px) {
             .lore {
-                width: min(100%, 740px);
+                width: min(100%, 700px);
                 aspect-ratio: auto;
                 padding: 20px 24px 18px;
                 margin-top: 12px;
