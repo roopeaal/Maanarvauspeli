@@ -73,14 +73,82 @@ def _varmista_pelaaja(username):
         cursor.execute("SELECT id FROM game WHERE username = %s", (username,))
         loytyi = cursor.fetchone()
         if not loytyi:
-            cursor.execute(
-                "INSERT INTO game (username, password, points, hiscore) VALUES (%s, %s, %s, %s)",
-                (username, '', 1000, 0)
-            )
-            conn.commit()
+            _lisaa_uusi_pelaaja_yhteensopivasti(cursor, conn, username)
     finally:
         cursor.close()
         conn.close()
+
+
+def _lisaa_uusi_pelaaja_yhteensopivasti(cursor, conn, username):
+    cursor.execute("SHOW COLUMNS FROM game")
+    sarakkeet = cursor.fetchall()
+    if not sarakkeet:
+        raise RuntimeError("game-taulun sarakkeita ei löytynyt.")
+
+    sarake_meta = {}
+    for row in sarakkeet:
+        nimi = row[0]
+        tyyppi = (row[1] or "").lower()
+        nullable = (row[2] or "").upper()
+        oletus = row[4]
+        extra = (row[5] or "").lower()
+        sarake_meta[nimi] = {
+            "type": tyyppi,
+            "null": nullable,
+            "default": oletus,
+            "extra": extra
+        }
+
+    if "username" not in sarake_meta:
+        raise RuntimeError("game-taulusta puuttuu username-sarake.")
+
+    tunnetut_oletusarvot = {
+        "username": username,
+        "password": "",
+        "points": 1000,
+        "hiscore": 0,
+        "kierroksen_Maa": None,
+        "arvottu_latitude": None,
+        "arvottu_longitude": None,
+    }
+
+    insert_sarakkeet = []
+    insert_arvot = []
+
+    for sarake, arvo in tunnetut_oletusarvot.items():
+        if sarake in sarake_meta:
+            insert_sarakkeet.append(sarake)
+            insert_arvot.append(arvo)
+
+    for sarake, meta in sarake_meta.items():
+        if sarake in insert_sarakkeet:
+            continue
+        if "auto_increment" in meta["extra"]:
+            continue
+        if meta["null"] == "YES":
+            continue
+        if meta["default"] is not None:
+            continue
+
+        tyyppi = meta["type"]
+        if any(numerinen in tyyppi for numeerinen in ("int", "decimal", "float", "double")):
+            insert_sarakkeet.append(sarake)
+            insert_arvot.append(0)
+        elif "char" in tyyppi or "text" in tyyppi:
+            insert_sarakkeet.append(sarake)
+            insert_arvot.append("")
+        else:
+            raise RuntimeError(
+                f"game-taulussa vaaditaan sarake '{sarake}', jolle ei osattu antaa oletusarvoa."
+            )
+
+    placeholders = ", ".join(["%s"] * len(insert_sarakkeet))
+    sarakkeet_sql = ", ".join(insert_sarakkeet)
+    cursor.execute(
+        f"INSERT INTO game ({sarakkeet_sql}) VALUES ({placeholders})",
+        tuple(insert_arvot)
+    )
+    conn.commit()
 
 
 @app.route('/set_name', methods=['POST'])
@@ -621,8 +689,10 @@ def hae_kayttajan_pisteet(username):
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT points FROM game WHERE username = %s", (username,))
-        user_points = cursor.fetchone()[0]
-        return user_points
+        rivi = cursor.fetchone()
+        if not rivi or rivi[0] is None:
+            return 1000
+        return int(rivi[0])
     finally:
         cursor.close()
         conn.close()
