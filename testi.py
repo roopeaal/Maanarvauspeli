@@ -93,8 +93,13 @@ def set_name():
     if len(username) > 50:
         username = username[:50]
 
-    _varmista_pelaaja(username)
-    lisaa_pisteet(username, 1000)
+    try:
+        _varmista_pelaaja(username)
+        lisaa_pisteet(username, 1000)
+    except Exception:
+        app.logger.exception("Nimen asetus epäonnistui /set_name-reitillä.")
+        flash('Pelin aloitus epäonnistui palvelimella. Yritä hetken päästä uudelleen.', 'danger')
+        return redirect(url_for('index'))
 
     response = make_response(redirect(url_for('game')))
     response.set_cookie('username', username)
