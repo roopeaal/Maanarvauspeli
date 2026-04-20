@@ -454,9 +454,21 @@
                 min-width: 0;
             }
         }
+
+        #ilotulitus-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 40;
+            opacity: 0.74;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <canvas id="ilotulitus-canvas" aria-hidden="true"></canvas>
     <div class="peli-paneeli">
     <div class="ylarivi">
         <div class="vasen-ylasarake">
@@ -528,6 +540,180 @@
             var arvausKentta = document.getElementById("pelaajan_maa");
             var arvausLabel = document.querySelector('label[for="pelaajan_maa"]');
             var arvausAlue = document.querySelector('.arvaus-alue');
+            var ilotulitusCanvas = document.getElementById('ilotulitus-canvas');
+            var ilotulitusCtx = ilotulitusCanvas ? ilotulitusCanvas.getContext('2d') : null;
+            var ilotulitusAnimaatioId = null;
+            var ilotulitusKaynnissa = false;
+            var ilotulitusRaketit = [];
+            var ilotulitusPartikkelit = [];
+            var viimeisinRakettiAika = 0;
+            var ilotulitusSyntyvaliMs = 190;
+            var ilotulitusEdellinenAika = 0;
+
+            function paivitaIlotulitusCanvasKoko() {
+                if (!ilotulitusCanvas || !ilotulitusCtx) return;
+                var dpr = Math.max(1, window.devicePixelRatio || 1);
+                var leveys = window.innerWidth || document.documentElement.clientWidth || 1;
+                var korkeus = window.innerHeight || document.documentElement.clientHeight || 1;
+                ilotulitusCanvas.width = Math.floor(leveys * dpr);
+                ilotulitusCanvas.height = Math.floor(korkeus * dpr);
+                ilotulitusCanvas.style.width = leveys + 'px';
+                ilotulitusCanvas.style.height = korkeus + 'px';
+                ilotulitusCtx.setTransform(1, 0, 0, 1, 0, 0);
+                ilotulitusCtx.scale(dpr, dpr);
+            }
+
+            function satunnainenIlotulitusVari() {
+                var hue = Math.floor(Math.random() * 360);
+                return 'hsl(' + hue + ', 100%, 64%)';
+            }
+
+            function luoRaketti() {
+                var leveys = ilotulitusCanvas.clientWidth || window.innerWidth;
+                var korkeus = ilotulitusCanvas.clientHeight || window.innerHeight;
+                var x = leveys * (0.06 + Math.random() * 0.88);
+                var y = korkeus + 12;
+                var kulma = (-Math.PI / 2) + ((Math.random() - 0.5) * 0.24);
+                var nopeus = 7.2 + Math.random() * 2.1;
+                return {
+                    x: x,
+                    y: y,
+                    vx: Math.cos(kulma) * (0.7 + Math.random() * 1.2),
+                    vy: -nopeus,
+                    tavoiteY: korkeus * (0.19 + Math.random() * 0.36),
+                    vari: satunnainenIlotulitusVari(),
+                    trail: []
+                };
+            }
+
+            function luoRajahdys(x, y, perusVari) {
+                var maara = 26 + Math.floor(Math.random() * 26);
+                for (var i = 0; i < maara; i++) {
+                    var kulma = Math.random() * Math.PI * 2;
+                    var nopeus = 1.2 + Math.random() * 3.5;
+                    ilotulitusPartikkelit.push({
+                        x: x,
+                        y: y,
+                        px: x,
+                        py: y,
+                        vx: Math.cos(kulma) * nopeus,
+                        vy: Math.sin(kulma) * nopeus,
+                        life: 1,
+                        decay: 0.012 + Math.random() * 0.013,
+                        koko: 1.6 + Math.random() * 1.9,
+                        vari: Math.random() < 0.18 ? '#ffffff' : perusVari
+                    });
+                }
+                if (ilotulitusPartikkelit.length > 420) {
+                    ilotulitusPartikkelit.splice(0, ilotulitusPartikkelit.length - 420);
+                }
+            }
+
+            function piirraRaketti(raketti) {
+                if (!ilotulitusCtx) return;
+                ilotulitusCtx.beginPath();
+                if (raketti.trail.length > 0) {
+                    ilotulitusCtx.moveTo(raketti.trail[0].x, raketti.trail[0].y);
+                    for (var i = 1; i < raketti.trail.length; i++) {
+                        ilotulitusCtx.lineTo(raketti.trail[i].x, raketti.trail[i].y);
+                    }
+                } else {
+                    ilotulitusCtx.moveTo(raketti.x, raketti.y);
+                }
+                ilotulitusCtx.strokeStyle = raketti.vari;
+                ilotulitusCtx.lineWidth = 2.1;
+                ilotulitusCtx.globalAlpha = 0.82;
+                ilotulitusCtx.stroke();
+
+                ilotulitusCtx.beginPath();
+                ilotulitusCtx.arc(raketti.x, raketti.y, 1.8, 0, Math.PI * 2);
+                ilotulitusCtx.fillStyle = '#ffecc7';
+                ilotulitusCtx.globalAlpha = 0.95;
+                ilotulitusCtx.fill();
+            }
+
+            function piirraPartikkeli(partikkeli) {
+                if (!ilotulitusCtx) return;
+                ilotulitusCtx.beginPath();
+                ilotulitusCtx.moveTo(partikkeli.px, partikkeli.py);
+                ilotulitusCtx.lineTo(partikkeli.x, partikkeli.y);
+                ilotulitusCtx.strokeStyle = partikkeli.vari;
+                ilotulitusCtx.lineWidth = Math.max(0.6, partikkeli.koko * partikkeli.life);
+                ilotulitusCtx.globalAlpha = Math.max(0, partikkeli.life * 0.9);
+                ilotulitusCtx.stroke();
+            }
+
+            function paivitaIlotulitus(aika) {
+                if (!ilotulitusKaynnissa || !ilotulitusCtx) return;
+                if (!ilotulitusEdellinenAika) ilotulitusEdellinenAika = aika;
+                var dt = Math.min(0.033, (aika - ilotulitusEdellinenAika) / 1000);
+                ilotulitusEdellinenAika = aika;
+
+                ilotulitusCtx.clearRect(0, 0, ilotulitusCanvas.clientWidth, ilotulitusCanvas.clientHeight);
+
+                if (aika - viimeisinRakettiAika > ilotulitusSyntyvaliMs && ilotulitusRaketit.length < 4) {
+                    ilotulitusRaketit.push(luoRaketti());
+                    viimeisinRakettiAika = aika;
+                }
+
+                for (var i = ilotulitusRaketit.length - 1; i >= 0; i--) {
+                    var r = ilotulitusRaketit[i];
+                    r.trail.push({ x: r.x, y: r.y });
+                    if (r.trail.length > 7) r.trail.shift();
+                    r.x += r.vx * (60 * dt);
+                    r.y += r.vy * (60 * dt);
+                    r.vy += 0.048 * (60 * dt);
+                    piirraRaketti(r);
+                    if (r.y <= r.tavoiteY || r.vy >= -1) {
+                        luoRajahdys(r.x, r.y, r.vari);
+                        ilotulitusRaketit.splice(i, 1);
+                    }
+                }
+
+                for (var j = ilotulitusPartikkelit.length - 1; j >= 0; j--) {
+                    var p = ilotulitusPartikkelit[j];
+                    p.px = p.x;
+                    p.py = p.y;
+                    p.x += p.vx * (60 * dt);
+                    p.y += p.vy * (60 * dt);
+                    p.vx *= 0.986;
+                    p.vy = (p.vy * 0.992) + (0.044 * (60 * dt));
+                    p.life -= p.decay * (60 * dt);
+                    piirraPartikkeli(p);
+                    if (p.life <= 0) {
+                        ilotulitusPartikkelit.splice(j, 1);
+                    }
+                }
+
+                ilotulitusCtx.globalAlpha = 1;
+                ilotulitusAnimaatioId = requestAnimationFrame(paivitaIlotulitus);
+            }
+
+            function lopetaIlotulitus() {
+                if (!ilotulitusKaynnissa) return;
+                ilotulitusKaynnissa = false;
+                if (ilotulitusAnimaatioId) {
+                    cancelAnimationFrame(ilotulitusAnimaatioId);
+                    ilotulitusAnimaatioId = null;
+                }
+                ilotulitusRaketit = [];
+                ilotulitusPartikkelit = [];
+                ilotulitusEdellinenAika = 0;
+                if (ilotulitusCtx && ilotulitusCanvas) {
+                    ilotulitusCtx.clearRect(0, 0, ilotulitusCanvas.clientWidth, ilotulitusCanvas.clientHeight);
+                    ilotulitusCanvas.style.display = 'none';
+                }
+            }
+
+            function kaynnistaIlotulitus() {
+                if (!ilotulitusCanvas || !ilotulitusCtx || ilotulitusKaynnissa) return;
+                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                paivitaIlotulitusCanvasKoko();
+                ilotulitusCanvas.style.display = 'block';
+                ilotulitusKaynnissa = true;
+                viimeisinRakettiAika = performance.now();
+                ilotulitusAnimaatioId = requestAnimationFrame(paivitaIlotulitus);
+            }
 
             function normalisoiMaaSyote(teksti) {
                 if (!teksti) return '';
@@ -557,6 +743,7 @@
 
             paivitaArvausKentanLeveys();
             window.addEventListener('resize', paivitaArvausKentanLeveys);
+            window.addEventListener('resize', paivitaIlotulitusCanvasKoko);
 
             function haeRajaPaksuus(perusPaksuus) {
                 var zoom = kartta.getZoom();
@@ -748,12 +935,16 @@
 
             // Listen for the "Hint" button click
             var vihjeNappi = document.getElementById("vihje-nappi");
-            vihjeNappi.addEventListener("click", naytaLentokenttaNimi);
+            vihjeNappi.addEventListener("click", function () {
+                lopetaIlotulitus();
+                naytaLentokenttaNimi();
+            });
 
             function aloitaUusiPeli(event) {
                 if (event) {
                     event.preventDefault(); // Estä linkin oletustoiminto (navigointi)
                 }
+                lopetaIlotulitus();
                 // Tee pyyntö uuden maan arpomiseksi
                 fetch('/new_game')  // Korvaa '/new_game' tarvittavalla reitillä palvelimellasi
                     .then(response => response.json())
@@ -777,6 +968,17 @@
             var uusiPeliArvausNappi = document.getElementById("uusi-peli-arvaus-btn");
             if (uusiPeliArvausNappi) {
                 uusiPeliArvausNappi.addEventListener("click", aloitaUusiPeli);
+            }
+
+            document.addEventListener('click', function (event) {
+                var painettuNappi = event.target.closest('button, a, input[type="submit"], input[type="button"]');
+                if (painettuNappi) {
+                    lopetaIlotulitus();
+                }
+            }, true);
+
+            if (kierrosVoitettu) {
+                kaynnistaIlotulitus();
             }
         });
     </script>
