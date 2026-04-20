@@ -42,6 +42,9 @@
         }
 
         .lore {
+            --roller-fill-x: 6.1%;
+            --roller-fill-w: 2.25%;
+            --roller-fill-h: 73%;
             position: relative;
             max-width: 660px;
             margin: -16px auto -2px;
@@ -75,13 +78,13 @@
                 );
             background-position:
                 center center,
-                left 7.75% center,
-                right 7.75% center;
+                left var(--roller-fill-x) center,
+                right var(--roller-fill-x) center;
             background-repeat: no-repeat, no-repeat, no-repeat;
             background-size:
                 100% 100%,
-                3.05% 81%,
-                3.05% 81%;
+                var(--roller-fill-w) var(--roller-fill-h),
+                var(--roller-fill-w) var(--roller-fill-h);
             background-color: transparent;
             border: 0;
             border-radius: 0;
@@ -166,6 +169,9 @@
                 max-width: 100%;
                 aspect-ratio: 740 / 456;
                 margin: -4px auto 0;
+                --roller-fill-x: 6.2%;
+                --roller-fill-w: 2.35%;
+                --roller-fill-h: 72%;
                 padding:
                     clamp(34px, 10vw, 48px)
                     clamp(58px, 17vw, 78px)
@@ -210,6 +216,9 @@
             }
 
             .lore {
+                --roller-fill-x: 6.25%;
+                --roller-fill-w: 2.45%;
+                --roller-fill-h: 71%;
                 padding:
                     clamp(28px, 9vw, 40px)
                     clamp(52px, 16.8vw, 70px)
