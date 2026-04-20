@@ -5,6 +5,7 @@ import math
 import os
 import random
 import mysql.connector
+from mysql.connector import pooling
 from urllib.parse import urlparse, unquote
 
 app = Flask(__name__)
@@ -53,8 +54,12 @@ def laske_vihjeen_pistehinta(points):
     # Vihjeen hinta = kahden arvauksen verran nykyisellä pistealueella.
     return min(pisteet, laske_arvauksen_pistevahennys(pisteet) * 2)
 
+
+DB_POOL = None
+DB_POOL_SIG = None
+
 # Tietokantayhteyden avausfunktio
-def get_db_connection():
+def _build_db_connection_config():
     db_url = os.getenv('DB_URL') or os.getenv('DATABASE_URL') or os.getenv('DB_URI')
     parsed = urlparse(db_url) if db_url else None
 
@@ -104,7 +109,51 @@ def get_db_connection():
     elif ssl_mode in ('DISABLED', 'OFF', 'FALSE', '0'):
         conn_kwargs['ssl_disabled'] = True
 
-    conn = mysql.connector.connect(**conn_kwargs)
+    return conn_kwargs
+
+
+def _config_signature(conn_kwargs):
+    return (
+        conn_kwargs.get('host'),
+        conn_kwargs.get('port'),
+        conn_kwargs.get('database'),
+        conn_kwargs.get('user'),
+        conn_kwargs.get('password'),
+        conn_kwargs.get('ssl_disabled', None),
+        conn_kwargs.get('ssl_ca', None),
+    )
+
+
+def _get_db_pool():
+    global DB_POOL, DB_POOL_SIG
+    conn_kwargs = _build_db_connection_config()
+    nykyinen_sig = _config_signature(conn_kwargs)
+    pool_size_raw = os.getenv('DB_POOL_SIZE', '8')
+    try:
+        pool_size = max(1, int(pool_size_raw))
+    except ValueError:
+        pool_size = 8
+
+    if DB_POOL is None or DB_POOL_SIG != nykyinen_sig:
+        DB_POOL = pooling.MySQLConnectionPool(
+            pool_name='lentokonepeli_pool',
+            pool_size=pool_size,
+            pool_reset_session=True,
+            **conn_kwargs
+        )
+        DB_POOL_SIG = nykyinen_sig
+
+    return DB_POOL
+
+
+def get_db_connection():
+    global DB_POOL
+    try:
+        conn = _get_db_pool().get_connection()
+    except mysql.connector.Error:
+        # Jos pooli meni epäkuntoon, luodaan se seuraavalla kutsulla uudestaan.
+        DB_POOL = None
+        conn = _get_db_pool().get_connection()
     return conn
 
 # Tietokantayhteyden avaaminen ja sulkeminen tietokantakäsittelyissä
@@ -494,19 +543,20 @@ def _ehdotuksen_minimiraja(pituus):
         return 0.75
     return 0.70
 
-def hae_lahin_maaehdotus(maa):
+def hae_lahin_maaehdotus(maa, maat=None):
     syote = (maa or "").strip()
     if not syote or not any(char.isalpha() for char in syote):
         return None
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT name FROM country")
-        maat = [row[0] for row in cursor.fetchall()]
-    finally:
-        cursor.close()
-        conn.close()
+    if maat is None:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT name FROM country")
+            maat = [row[0] for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+            conn.close()
 
     if not maat:
         return None
@@ -634,6 +684,59 @@ def hae_kartta_aliasit():
             alias_map[alias_avain] = kohde_avain
     return alias_map
 
+
+def hae_maiden_konteksti():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT iso_country, name, latitude, longitude FROM country")
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    sallitut_iso_koodit = []
+    iso_maa_nimi_map = {}
+    maa_nimi_map = {}
+    maa_tiedot_norm_map = {}
+    maat_nimet = []
+
+    for row in rows:
+        if not row:
+            continue
+
+        iso_raaka = (row[0] or "").strip().upper()
+        nimi = (row[1] or "").strip()
+        lat = row[2]
+        lng = row[3]
+
+        if not nimi:
+            continue
+
+        maat_nimet.append(nimi)
+        norm = _normalisoi_maa_syote(nimi)
+        if norm:
+            maa_nimi_map[norm] = nimi
+            if lat is not None and lng is not None:
+                maa_tiedot_norm_map[norm] = {
+                    'name': nimi,
+                    'iso_country': iso_raaka,
+                    'latitude': float(lat),
+                    'longitude': float(lng),
+                }
+
+        if len(iso_raaka) == 2 and iso_raaka.isalpha():
+            sallitut_iso_koodit.append(iso_raaka)
+            iso_maa_nimi_map[iso_raaka] = nimi
+
+    return {
+        'sallitut_iso_koodit': sorted(set(sallitut_iso_koodit)),
+        'iso_maa_nimi_map': iso_maa_nimi_map,
+        'maa_nimi_map': maa_nimi_map,
+        'maa_tiedot_norm_map': maa_tiedot_norm_map,
+        'maat_nimet': maat_nimet,
+    }
+
 def _hae_arvatut_maat_cookie():
     arvatut_maat_raaka = request.cookies.get('arvatut_maat', '')
     arvatut_maat = []
@@ -655,9 +758,12 @@ def game():
     if not username:
         return redirect(url_for('index'))
     _varmista_pelaaja(username)
-    sallitut_iso_koodit = hae_sallitut_iso_koodit()
-    iso_maa_nimi_map = hae_iso_maa_nimi_map()
-    maa_nimi_map = hae_normalisoitu_maa_nimi_map()
+    maiden_konteksti = hae_maiden_konteksti()
+    sallitut_iso_koodit = maiden_konteksti['sallitut_iso_koodit']
+    iso_maa_nimi_map = maiden_konteksti['iso_maa_nimi_map']
+    maa_nimi_map = maiden_konteksti['maa_nimi_map']
+    maa_tiedot_norm_map = maiden_konteksti['maa_tiedot_norm_map']
+    maat_nimet = maiden_konteksti['maat_nimet']
     kartta_aliasit = hae_kartta_aliasit()
 
     # Tarkistetaan, onko arvottu maa ja koordinaatit jo tallennettu evästeisiin
@@ -738,37 +844,39 @@ def game():
     oikea_osuma = False
 
     if request.method == 'POST':
-        pelaajan_maa = request.form.get('pelaajan_maa')
-        if pelaajan_maa:
-            if tarkista_maa_tietokannasta(pelaajan_maa):
-                pelaajan_maa_koord = hae_maan_koordinaatit(pelaajan_maa)
-                pelaajan_maa_koord = tuple(map(float, pelaajan_maa_koord))  # Muuta merkkijonoista liukuluvuiksi
+        pelaajan_maa_syote = request.form.get('pelaajan_maa')
+        if pelaajan_maa_syote:
+            syote_norm = _normalisoi_maa_syote(pelaajan_maa_syote)
+            maan_tiedot = maa_tiedot_norm_map.get(syote_norm)
+            if maan_tiedot:
+                pelaajan_maa = maan_tiedot['name']
+                pelaajan_maa_koord = (maan_tiedot['latitude'], maan_tiedot['longitude'])
                 pisteet = 0
-                maan_iso_koodi = hae_maan_iso_koodi(pelaajan_maa)
-                if maan_iso_koodi:
-                    maan_iso_koodi = maan_iso_koodi.upper()
+                maan_iso_koodi = (maan_tiedot['iso_country'] or "").upper()
                 onko_jo_arvattu = bool(maan_iso_koodi and maan_iso_koodi in arvatut_maat)
                 if maan_iso_koodi and not onko_jo_arvattu:
                     arvatut_maat.append(maan_iso_koodi)
-                arvottu_latitude = float(arvottu_latitude)  # Muuta merkkijono liukuluvaksi
-                arvottu_longitude = float(arvottu_longitude)  # Muuta merkkijono liukuluvaksi
-                etaisyys, ilmansuunta = laske_etaisyys_ja_ilmansuunta(pelaajan_maa_koord,
-                                                                      (arvottu_latitude, arvottu_longitude))
+                arvottu_latitude = float(arvottu_latitude)
+                arvottu_longitude = float(arvottu_longitude)
+                etaisyys, ilmansuunta = laske_etaisyys_ja_ilmansuunta(
+                    pelaajan_maa_koord,
+                    (arvottu_latitude, arvottu_longitude)
+                )
+
                 if onko_jo_arvattu:
                     result_category = 'info'
                     tulos = f'Olet jo arvannut jo maata "{pelaajan_maa}". Kolumbus on {etaisyys} km päässä {ilmansuunta}.'
-                elif pelaajan_maa.lower() == arvottu_maa.lower():
-                    # Lisää pisteet käyttäjälle
+                elif _normalisoi_maa_syote(pelaajan_maa) == _normalisoi_maa_syote(arvottu_maa):
                     pisteet = 0
-                    lisaa_pisteet(username, user_points)  # Päivitä pisteet tietokantaan
-                    user_points += pisteet  # Päivitä käyttäjän pistemäärä
+                    lisaa_pisteet(username, user_points)
                     tulos = (
-                        f'Arvasit oikein! Oikea maa on: {arvottu_maa}. Keräsit {user_points} pistettä! Aloita uusi peli "Aloita uusi peli" napista.')
+                        f'Arvasit oikein! Oikea maa on: {arvottu_maa}. Keräsit {user_points} pistettä! '
+                        'Aloita uusi peli "Aloita uusi peli" napista.'
+                    )
                     paivita_hiscore(username, user_points)
                     oikea_osuma = True
                     oikea_maa_iso = maan_iso_koodi
                 else:
-                    # Vähennys määräytyy nykyisten pisteiden mukaan, ei koskaan alle nollan.
                     vahennys = laske_arvauksen_pistevahennys(user_points)
                     uusi_pistemaara = max(0, user_points - vahennys)
                     pisteet = uusi_pistemaara - user_points
@@ -779,24 +887,33 @@ def game():
 
                 kierros_voitettu = bool(oikea_maa_iso and oikea_maa_iso in arvatut_maat)
 
-                # Tallenna pisteet evästeisiin
                 response = make_response(
-                    render_template('game.html', result=tulos, result_category=result_category, points=user_points,
-                                    pisteet=pisteet, pelaajan_maa_koord=pelaajan_maa_koord,
-                                    vihje_hinta=laske_vihjeen_pistehinta(user_points),
-                                    vihje_teksti=vihje_teksti, vihje_kaytetty=vihje_kaytetty,
-                                    arvatut_maat=arvatut_maat, sallitut_iso_koodit=sallitut_iso_koodit,
-                                    iso_maa_nimi_map=iso_maa_nimi_map,
-                                    maa_nimi_map=maa_nimi_map, kartta_aliasit=kartta_aliasit,
-                                    kierros_voitettu=kierros_voitettu,
-                                    oikea_maa_iso=oikea_maa_iso,
-                                    oikea_osuma=oikea_osuma))
+                    render_template(
+                        'game.html',
+                        result=tulos,
+                        result_category=result_category,
+                        points=user_points,
+                        pisteet=pisteet,
+                        pelaajan_maa_koord=pelaajan_maa_koord,
+                        vihje_hinta=laske_vihjeen_pistehinta(user_points),
+                        vihje_teksti=vihje_teksti,
+                        vihje_kaytetty=vihje_kaytetty,
+                        arvatut_maat=arvatut_maat,
+                        sallitut_iso_koodit=sallitut_iso_koodit,
+                        iso_maa_nimi_map=iso_maa_nimi_map,
+                        maa_nimi_map=maa_nimi_map,
+                        kartta_aliasit=kartta_aliasit,
+                        kierros_voitettu=kierros_voitettu,
+                        oikea_maa_iso=oikea_maa_iso,
+                        oikea_osuma=oikea_osuma
+                    )
+                )
                 _tallenna_arvatut_maat_cookie(response, arvatut_maat)
                 if oikea_osuma and oikea_maa_iso:
                     response.set_cookie('oikea_maa_iso', oikea_maa_iso)
                 return response
             else:
-                ehdotus = hae_lahin_maaehdotus(pelaajan_maa)
+                ehdotus = hae_lahin_maaehdotus(pelaajan_maa_syote, maat=maat_nimet)
                 if ehdotus:
                     tulos = f'Maa on kirjoitettu väärin, tarkoititko {ehdotus}?'
                 else:
@@ -805,8 +922,7 @@ def game():
         else:
             tulos = "Syötä arvaus."
 
-    # Tallenna pisteet evästeisiin
-    user_points = hae_kayttajan_pisteet(username)
+    # Tallenna pisteet evästeisiin (GET / invalid syöte käyttää nykyistä arvoa)
     response = make_response(render_template(
         'game.html',
         result=tulos,

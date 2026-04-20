@@ -567,6 +567,9 @@
             var arvausKentta = document.getElementById("pelaajan_maa");
             var arvausLabel = document.querySelector('label[for="pelaajan_maa"]');
             var arvausAlue = document.querySelector('.arvaus-alue');
+            var GEOJSON_URL = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
+            var GEOJSON_CACHE_KEY = 'lentokonepeli_geo_countries_v1';
+            var GEOJSON_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
             var ilotulitusCanvas = document.getElementById('ilotulitus-canvas');
             var ilotulitusCtx = ilotulitusCanvas ? ilotulitusCanvas.getContext('2d') : null;
             var ilotulitusAnimaatioId = null;
@@ -865,9 +868,42 @@
                 }
             }
 
+            function haeMaatGeojson() {
+                try {
+                    var cacheRaw = localStorage.getItem(GEOJSON_CACHE_KEY);
+                    if (cacheRaw) {
+                        var cache = JSON.parse(cacheRaw);
+                        if (
+                            cache &&
+                            cache.savedAt &&
+                            (Date.now() - Number(cache.savedAt) < GEOJSON_CACHE_MAX_AGE_MS) &&
+                            cache.data &&
+                            cache.data.type === 'FeatureCollection'
+                        ) {
+                            return Promise.resolve(cache.data);
+                        }
+                    }
+                } catch (e) {
+                    // Välimuistin lukuvirhe ei saa estää peliä.
+                }
+
+                return fetch(GEOJSON_URL)
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        try {
+                            localStorage.setItem(
+                                GEOJSON_CACHE_KEY,
+                                JSON.stringify({ savedAt: Date.now(), data: data })
+                            );
+                        } catch (e) {
+                            // Välimuisti voi olla täynnä; ohitetaan hiljaisesti.
+                        }
+                        return data;
+                    });
+            }
+
             function piirraMaidenRajatJaArvatutMaat() {
-                fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
-                    .then(response => response.json())
+                haeMaatGeojson()
                     .then(data => {
                         maatLayer = L.geoJSON(data, {
                             style: haeMaanTyyli,
