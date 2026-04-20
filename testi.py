@@ -1,12 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response, jsonify
 from geopy.distance import geodesic
 import difflib
+import json
 import math
 import os
 import random
+import threading
+import time
+import urllib.error
+import urllib.request
 import mysql.connector
 from mysql.connector import pooling
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-me-in-production')
@@ -63,6 +68,9 @@ def laske_vihjeen_pistehinta(points):
 
 DB_POOL = None
 DB_POOL_SIG = None
+AIVEN_WAKE_LOCK = threading.Lock()
+AIVEN_LAST_WAKE_ATTEMPT_TS = 0.0
+AIVEN_WAKE_CONFIG_WARNED = False
 
 # Tietokantayhteyden avausfunktio
 def _build_db_connection_config():
@@ -130,6 +138,129 @@ def _config_signature(conn_kwargs):
     )
 
 
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _aiven_service_name_from_host(host):
+    host = (host or '').strip()
+    if not host:
+        return ''
+    # Esim. "mysql-18002453-metropolia-7188.i.aivencloud.com" -> "mysql-18002453"
+    first_label = host.split('.', 1)[0]
+    if not first_label:
+        return ''
+    return first_label.split('-', 2)[0] + '-' + first_label.split('-', 2)[1] if '-' in first_label else first_label
+
+
+def _should_try_aiven_wakeup(conn_kwargs, error):
+    host = (conn_kwargs.get('host') or '').lower()
+    if not host.endswith('aivencloud.com'):
+        return False
+    errno = getattr(error, 'errno', None)
+    if errno in (2003, 2005, 2013):
+        return True
+    message = str(error).lower()
+    return any(fragment in message for fragment in (
+        'unknown mysql server host',
+        'can\'t connect',
+        'connection refused',
+        'timed out',
+        'name or service not known',
+        'temporary failure in name resolution',
+    ))
+
+
+def _aiven_api_request(method, url, token, payload=None, timeout=10):
+    headers = {
+        'Authorization': f'aivenv1 {token}',
+        'Content-Type': 'application/json',
+    }
+    data = None if payload is None else json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url=url, method=method, headers=headers, data=data)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode('utf-8', errors='replace')
+            parsed = json.loads(raw) if raw else {}
+            return resp.getcode(), parsed, ''
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode('utf-8', errors='replace')
+        try:
+            parsed = json.loads(raw) if raw else {}
+        except Exception:
+            parsed = {}
+        return e.code, parsed, raw
+    except urllib.error.URLError as e:
+        return None, {}, str(e)
+    except Exception as e:
+        return None, {}, str(e)
+
+
+def _maybe_power_on_aiven_service(conn_kwargs):
+    global AIVEN_LAST_WAKE_ATTEMPT_TS, AIVEN_WAKE_CONFIG_WARNED
+
+    if not _env_bool('AIVEN_AUTO_POWER_ON', True):
+        return False
+
+    host = (conn_kwargs.get('host') or '').strip().lower()
+    if not host.endswith('aivencloud.com'):
+        return False
+
+    token = (os.getenv('AIVEN_API_TOKEN') or os.getenv('AIVEN_TOKEN') or '').strip()
+    project = (os.getenv('AIVEN_PROJECT') or os.getenv('AIVEN_PROJECT_NAME') or '').strip()
+    service_name = (os.getenv('AIVEN_SERVICE_NAME') or _aiven_service_name_from_host(host) or '').strip()
+    api_base = (os.getenv('AIVEN_API_BASE_URL') or 'https://api.aiven.io/v1').strip().rstrip('/')
+
+    if not token or not project or not service_name:
+        if not AIVEN_WAKE_CONFIG_WARNED:
+            app.logger.warning(
+                'Aiven auto power-on ohitettu: aseta env-muuttujat AIVEN_API_TOKEN, '
+                'AIVEN_PROJECT ja AIVEN_SERVICE_NAME.'
+            )
+            AIVEN_WAKE_CONFIG_WARNED = True
+        return False
+
+    cooldown_raw = os.getenv('AIVEN_WAKE_COOLDOWN_SECONDS', '90')
+    try:
+        cooldown = max(15, int(cooldown_raw))
+    except ValueError:
+        cooldown = 90
+
+    now = time.time()
+    with AIVEN_WAKE_LOCK:
+        if now - AIVEN_LAST_WAKE_ATTEMPT_TS < cooldown:
+            return False
+        AIVEN_LAST_WAKE_ATTEMPT_TS = now
+
+    project_q = quote(project, safe='')
+    service_q = quote(service_name, safe='')
+    service_url = f'{api_base}/project/{project_q}/service/{service_q}'
+
+    # Jos palvelu on jo käynnissä, ei tehdä mitään.
+    status, response_json, _ = _aiven_api_request('GET', service_url, token, timeout=8)
+    if status and 200 <= status < 300:
+        state = ((response_json or {}).get('service') or {}).get('state', '')
+        if str(state).lower() == 'running':
+            return False
+
+    for payload in ({'powered': True}, {'power_on': True}):
+        status, _, error_text = _aiven_api_request('PUT', service_url, token, payload=payload, timeout=12)
+        if status and 200 <= status < 300:
+            app.logger.info('Aiven-palvelun käynnistys pyydetty API:n kautta (%s).', service_name)
+            return True
+        if status in (409, 422):
+            # Muutos on jo käynnissä tai palvelu on käytännössä jo tulossa ylös.
+            app.logger.info('Aiven-palvelun käynnistys on jo käynnissä (%s).', service_name)
+            return True
+        if error_text:
+            app.logger.warning('Aiven auto power-on epäonnistui (%s): %s', service_name, error_text)
+
+    return False
+
+
 def _get_db_pool():
     global DB_POOL, DB_POOL_SIG
     conn_kwargs = _build_db_connection_config()
@@ -154,12 +285,32 @@ def _get_db_pool():
 
 def get_db_connection():
     global DB_POOL
+    conn_kwargs = _build_db_connection_config()
     try:
         conn = _get_db_pool().get_connection()
-    except mysql.connector.Error:
+    except mysql.connector.Error as first_error:
         # Jos pooli meni epäkuntoon, luodaan se seuraavalla kutsulla uudestaan.
         DB_POOL = None
-        conn = _get_db_pool().get_connection()
+        wake_requested = False
+        if _should_try_aiven_wakeup(conn_kwargs, first_error):
+            wake_requested = _maybe_power_on_aiven_service(conn_kwargs)
+            if wake_requested:
+                retry_delay_raw = os.getenv('AIVEN_WAKE_RETRY_DELAY_SECONDS', '4')
+                try:
+                    retry_delay = min(20, max(0, int(retry_delay_raw)))
+                except ValueError:
+                    retry_delay = 4
+                if retry_delay:
+                    time.sleep(retry_delay)
+        try:
+            conn = _get_db_pool().get_connection()
+        except mysql.connector.Error as second_error:
+            if wake_requested:
+                raise RuntimeError(
+                    'Aiven-tietokantaa heratellaan parhaillaan. '
+                    'Odota noin 30-90 sekuntia ja yrita uudelleen.'
+                ) from second_error
+            raise
     return conn
 
 # Tietokantayhteyden avaaminen ja sulkeminen tietokantakäsittelyissä
