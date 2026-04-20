@@ -87,7 +87,7 @@
         }
 
         .lore-teksti {
-            margin: 0;
+            margin: 0 auto;
             color: #2f2722;
             font-family: "Apple Chancery", "Snell Roundhand", "Bradley Hand", "Book Antiqua", "Palatino Linotype", serif;
             font-style: italic;
@@ -96,8 +96,8 @@
             line-height: 1.31;
             letter-spacing: 0.2px;
             text-shadow: 0.3px 0.8px 0 rgba(255, 246, 222, 0.26);
-            max-width: 100%;
-            width: 100%;
+            max-width: min(92%, 540px);
+            width: min(92%, 540px);
             text-align: left;
             transform: none;
             position: relative;
@@ -133,6 +133,8 @@
                 font-size: clamp(0.9em, 1.85vw, 1em);
                 line-height: 1.28;
                 transform: none;
+                max-width: min(90%, 500px);
+                width: min(90%, 500px);
             }
         }
 
@@ -168,6 +170,8 @@
             .lore-teksti {
                 font-size: clamp(0.82rem, 2.75vw, 0.9rem);
                 line-height: 1.18;
+                max-width: min(86%, 430px);
+                width: min(86%, 430px);
             }
 
             form {
@@ -210,6 +214,8 @@
             .lore-teksti {
                 font-size: clamp(0.76rem, 2.9vw, 0.84rem);
                 line-height: 1.15;
+                max-width: min(84%, 360px);
+                width: min(84%, 360px);
             }
 
             input[type="text"] {
