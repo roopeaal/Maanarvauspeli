@@ -42,10 +42,6 @@
         }
 
         .lore {
-            --roller-left-fill-x: 11.75%;
-            --roller-right-fill-x: 10.15%;
-            --roller-fill-w: 4.4%;
-            --roller-fill-h: 62%;
             position: relative;
             max-width: 660px;
             margin: -16px auto -2px;
@@ -59,33 +55,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image:
-                url('{{ url_for('static', filename='images/lore-scroll-opaque-light.png') }}'),
-                linear-gradient(
-                    90deg,
-                    rgba(188, 149, 97, 0) 0%,
-                    rgba(201, 165, 115, 0.58) 24%,
-                    rgba(245, 226, 186, 0.88) 50%,
-                    rgba(201, 165, 115, 0.58) 76%,
-                    rgba(188, 149, 97, 0) 100%
-                ),
-                linear-gradient(
-                    90deg,
-                    rgba(188, 149, 97, 0) 0%,
-                    rgba(201, 165, 115, 0.58) 24%,
-                    rgba(245, 226, 186, 0.88) 50%,
-                    rgba(201, 165, 115, 0.58) 76%,
-                    rgba(188, 149, 97, 0) 100%
-                );
-            background-position:
-                center center,
-                left var(--roller-left-fill-x) center,
-                right var(--roller-right-fill-x) center;
-            background-repeat: no-repeat, no-repeat, no-repeat;
-            background-size:
-                100% 100%,
-                var(--roller-fill-w) var(--roller-fill-h),
-                var(--roller-fill-w) var(--roller-fill-h);
+            background-image: url('{{ url_for('static', filename='images/lore-scroll-clean-light-solid-transparent.png') }}');
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
             background-color: transparent;
             border: 0;
             border-radius: 0;
@@ -170,10 +143,6 @@
                 max-width: 100%;
                 aspect-ratio: 740 / 456;
                 margin: -4px auto 0;
-                --roller-left-fill-x: 11.9%;
-                --roller-right-fill-x: 10.2%;
-                --roller-fill-w: 4.8%;
-                --roller-fill-h: 61%;
                 padding:
                     clamp(34px, 10vw, 48px)
                     clamp(72px, 19vw, 90px)
@@ -218,10 +187,6 @@
             }
 
             .lore {
-                --roller-left-fill-x: 11.95%;
-                --roller-right-fill-x: 10.25%;
-                --roller-fill-w: 5.2%;
-                --roller-fill-h: 60%;
                 padding:
                     clamp(28px, 9vw, 40px)
                     clamp(62px, 20vw, 84px)
