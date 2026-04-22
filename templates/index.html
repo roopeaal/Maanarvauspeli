@@ -72,18 +72,33 @@
 
         .lore-teksti {
             margin: 0 auto;
-            color: #000000;
+            color: #2a170d;
             font-family: "IM Fell English", "Goudy Old Style", "Book Antiqua", "Palatino Linotype", "Times New Roman", serif;
             font-style: italic;
             font-weight: 400;
             font-size: clamp(0.95em, 1.2vw, 1.06em);
             line-height: 1.31;
             letter-spacing: 0.2px;
-            text-shadow: none;
+            background: linear-gradient(
+                180deg,
+                rgba(54, 32, 18, 0.98) 0%,
+                rgba(34, 19, 11, 0.97) 100%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            mix-blend-mode: multiply;
+            opacity: 0.95;
+            text-shadow:
+                0.24px 0.24px 0 rgba(86, 57, 34, 0.34),
+                -0.2px 0.12px 0 rgba(86, 57, 34, 0.2),
+                0 0 1px rgba(43, 27, 16, 0.2);
+            filter: saturate(0.88) contrast(1.06);
+            text-rendering: optimizeLegibility;
             max-width: min(85%, 500px);
             width: min(85%, 500px);
             text-align: left;
-            transform: none;
+            transform: rotate(-0.28deg);
             position: relative;
             z-index: 0;
         }
@@ -94,7 +109,11 @@
             font-family: "IM Fell English SC", "IM Fell English", "Garamond", Georgia, "Times New Roman", serif;
             font-size: 2.35em;
             line-height: 0.9;
-            color: #000000;
+            color: #2b170d;
+            -webkit-text-fill-color: #2b170d;
+            text-shadow:
+                0.28px 0.28px 0 rgba(86, 57, 34, 0.38),
+                0 0 1px rgba(43, 27, 16, 0.24);
             font-weight: 700;
         }
 
