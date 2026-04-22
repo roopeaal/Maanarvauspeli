@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kristoffer Kolumbuksen jäljillä – maanarvauspeli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/antique-theme.css') }}">
     <style>
         body {
@@ -70,9 +73,9 @@
         .lore-teksti {
             margin: 0 auto;
             color: #000000;
-            font-family: "Apple Chancery", "Snell Roundhand", "Bradley Hand", "Book Antiqua", "Palatino Linotype", serif;
+            font-family: "IM Fell English", "Goudy Old Style", "Book Antiqua", "Palatino Linotype", "Times New Roman", serif;
             font-style: italic;
-            font-weight: 500;
+            font-weight: 400;
             font-size: clamp(0.95em, 1.2vw, 1.06em);
             line-height: 1.31;
             letter-spacing: 0.2px;
@@ -88,7 +91,7 @@
         .lore-teksti::first-letter {
             float: left;
             margin: 2px 8px 0 0;
-            font-family: "URW Chancery L", "Apple Chancery", "Garamond", Georgia, "Times New Roman", serif;
+            font-family: "IM Fell English SC", "IM Fell English", "Garamond", Georgia, "Times New Roman", serif;
             font-size: 2.35em;
             line-height: 0.9;
             color: #000000;
