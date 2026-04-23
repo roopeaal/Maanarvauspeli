@@ -528,21 +528,6 @@ def register():
 def login():
     return redirect(url_for('index'))
 
-
-def check_login(username, password):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, password FROM game WHERE username=%s", (username,))
-    user_data = cursor.fetchone()
-    conn.close()
-
-    # Tarkista onko user_data olemassa ja onko salasana oikea
-    if user_data and user_data['password'] == password:
-        return True
-    else:
-        flash("Virheellinen käyttäjätunnus tai salasana.", 'danger')
-        return False
-
 @app.route('/logout')
 def logout():
     response = make_response(redirect(url_for('index')))
