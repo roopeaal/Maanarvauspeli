@@ -105,6 +105,9 @@
             max-width: 34vw;
             height: auto;
             display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            transform: translateZ(0);
         }
 
         .kompassi-dot-ring {
@@ -231,7 +234,7 @@
                     "title logo"
                     "guess points";
                 column-gap: 8px;
-                row-gap: 2px;
+                row-gap: 0;
                 align-items: end;
             }
 
@@ -249,7 +252,7 @@
             .vasen-ylasarake .arvaus-alue {
                 grid-area: guess;
                 width: min(100%, 430px);
-                margin: -18px 0 0;
+                margin: -46px 0 0;
             }
 
             .kompassi-kortti {
@@ -259,8 +262,8 @@
             }
 
             .kompassi-svg {
-                width: 192px;
-                max-width: 56vw;
+                width: 214px;
+                max-width: 62vw;
             }
 
             #pisteet {
@@ -282,17 +285,17 @@
 
             .ylarivi {
                 column-gap: 6px;
-                row-gap: 1px;
+                row-gap: 0;
             }
 
             .vasen-ylasarake .arvaus-alue {
                 width: min(100%, 315px);
-                margin-top: -14px;
+                margin-top: -36px;
             }
 
             .kompassi-svg {
-                width: 176px;
-                max-width: 58vw;
+                width: 194px;
+                max-width: 66vw;
             }
 
             #pisteet {
