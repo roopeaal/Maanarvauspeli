@@ -7,6 +7,7 @@ import os
 import random
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import mysql.connector
@@ -35,6 +36,250 @@ YLEISET_MAA_ALIAKSET = {
     "finlad": "finland",
     "republicofserbia": "serbia",
 }
+
+SUOMENKIELISET_MAA_ALIAKSET = {
+    "Afganistan": "Afghanistan",
+    "Alankomaat": "Netherlands",
+    "Algeria": "Algeria",
+    "Amerikan Samoa": "American Samoa",
+    "Andorra": "Andorra",
+    "Angola": "Angola",
+    "Antigua ja Barbuda": "Antigua and Barbuda",
+    "Arabiemiirikunnat": "United Arab Emirates",
+    "Yhdistyneet arabiemiirikunnat": "United Arab Emirates",
+    "Argentiina": "Argentina",
+    "Armenia": "Armenia",
+    "Aruba": "Aruba",
+    "Australia": "Australia",
+    "Azerbaidzan": "Azerbaijan",
+    "Azerbaidžan": "Azerbaijan",
+    "Bahama": "Bahamas",
+    "Bahama-saaret": "Bahamas",
+    "Bahrain": "Bahrain",
+    "Bangladesh": "Bangladesh",
+    "Barbados": "Barbados",
+    "Belgia": "Belgium",
+    "Belize": "Belize",
+    "Benin": "Benin",
+    "Bermuda": "Bermuda",
+    "Bhutan": "Bhutan",
+    "Bolivia": "Bolivia",
+    "Bosnia ja Hertsegovina": "Bosnia and Herzegovina",
+    "Botswana": "Botswana",
+    "Brasilia": "Brazil",
+    "Britannia": "United Kingdom",
+    "Brittiläiset Neitsytsaaret": "British Virgin Islands",
+    "Brunei": "Brunei",
+    "Bulgaria": "Bulgaria",
+    "Burkina Faso": "Burkina Faso",
+    "Burundi": "Burundi",
+    "Caymansaaret": "Cayman Islands",
+    "Chile": "Chile",
+    "Cookinsaaret": "Cook Islands",
+    "Costa Rica": "Costa Rica",
+    "Curacao": "Curacao",
+    "Curaçao": "Curacao",
+    "Djibouti": "Djibouti",
+    "Dominikaaninen tasavalta": "Dominican Republic",
+    "Dominikaaninen": "Dominican Republic",
+    "Ecuador": "Ecuador",
+    "Egypti": "Egypt",
+    "El Salvador": "El Salvador",
+    "Espanja": "Spain",
+    "Eswatini": "Eswatini",
+    "Etelä-Afrikka": "South Africa",
+    "Etelä-Korea": "South Korea",
+    "Etelä-Sudan": "South Sudan",
+    "Etiopia": "Ethiopia",
+    "Falklandinsaaret": "Falkland Islands",
+    "Fidzi": "Fiji",
+    "Fiji": "Fiji",
+    "Filippiinit": "Philippines",
+    "Färsaaret": "Faroe Islands",
+    "Gabon": "Gabon",
+    "Gambia": "Gambia",
+    "Georgia": "Georgia",
+    "Ghana": "Ghana",
+    "Gibraltar": "Gibraltar",
+    "Grenada": "Grenada",
+    "Grönlanti": "Greenland",
+    "Guadeloupe": "Guadeloupe",
+    "Guam": "Guam",
+    "Guatemala": "Guatemala",
+    "Guinea": "Guinea",
+    "Guinea-Bissau": "Guinea-Bissau",
+    "Guyana": "Guyana",
+    "Haiti": "Haiti",
+    "Hollanti": "Netherlands",
+    "Honduras": "Honduras",
+    "Hongkong": "Hong Kong",
+    "Indonesia": "Indonesia",
+    "Intia": "India",
+    "Irak": "Iraq",
+    "Iran": "Iran",
+    "Irlanti": "Ireland",
+    "Islanti": "Iceland",
+    "Iso-Britannia": "United Kingdom",
+    "Israel": "Israel",
+    "Italia": "Italy",
+    "Itä-Timor": "Timor-Leste",
+    "Itävalta": "Austria",
+    "Jamaika": "Jamaica",
+    "Japani": "Japan",
+    "Jemen": "Yemen",
+    "Jordania": "Jordan",
+    "Kambodza": "Cambodia",
+    "Kambodža": "Cambodia",
+    "Kamerun": "Cameroon",
+    "Kanada": "Canada",
+    "Kap Verde": "Cape Verde",
+    "Karibian Alankomaat": "Caribbean Netherlands",
+    "Kazakstan": "Kazakhstan",
+    "Kenia": "Kenya",
+    "Keski-Afrikan tasavalta": "Central African Republic",
+    "Kiina": "China",
+    "Kirgisia": "Kyrgyzstan",
+    "Kirgistan": "Kyrgyzstan",
+    "Kiribati": "Kiribati",
+    "Kolumbia": "Colombia",
+    "Komorit": "Comoros",
+    "Kongon demokraattinen tasavalta": "DR Congo",
+    "Kongo-Kinshasa": "DR Congo",
+    "Kongon tasavalta": "Republic of the Congo",
+    "Kongo-Brazzaville": "Republic of the Congo",
+    "Kookossaaret": "Cocos (Keeling) Islands",
+    "Kookossaaret Keelingsaaret": "Cocos (Keeling) Islands",
+    "Kookos Keelingsaaret": "Cocos (Keeling) Islands",
+    "Kosovo": "Kosovo",
+    "Kreikka": "Greece",
+    "Kroatia": "Croatia",
+    "Kuuba": "Cuba",
+    "Kuwait": "Kuwait",
+    "Kypros": "Cyprus",
+    "Laos": "Laos",
+    "Latvia": "Latvia",
+    "Lesotho": "Lesotho",
+    "Libanon": "Lebanon",
+    "Liberia": "Liberia",
+    "Libya": "Libya",
+    "Liettua": "Lithuania",
+    "Luxemburg": "Luxembourg",
+    "Länsi-Sahara": "Western Sahara",
+    "Macao": "Macau",
+    "Macau": "Macau",
+    "Madagaskar": "Madagascar",
+    "Malawi": "Malawi",
+    "Malediivit": "Maldives",
+    "Malesia": "Malaysia",
+    "Mali": "Mali",
+    "Malta": "Malta",
+    "Mansaari": "Isle of Man",
+    "Marokko": "Morocco",
+    "Marshallinsaaret": "Marshall Islands",
+    "Martinique": "Martinique",
+    "Mauritania": "Mauritania",
+    "Mauritius": "Mauritius",
+    "Mayotte": "Mayotte",
+    "Meksiko": "Mexico",
+    "Mikronesia": "Micronesia",
+    "Moldova": "Moldova",
+    "Mongolia": "Mongolia",
+    "Montenegro": "Montenegro",
+    "Montserrat": "Montserrat",
+    "Mosambik": "Mozambique",
+    "Myanmar": "Myanmar",
+    "Namibia": "Namibia",
+    "Nepal": "Nepal",
+    "Nicaragua": "Nicaragua",
+    "Niger": "Niger",
+    "Nigeria": "Nigeria",
+    "Norja": "Norway",
+    "Norsunluurannikko": "Ivory Coast",
+    "Oman": "Oman",
+    "Pakistan": "Pakistan",
+    "Palau": "Palau",
+    "Palestiina": "Palestine",
+    "Panama": "Panama",
+    "Papua-Uusi-Guinea": "Papua New Guinea",
+    "Paraguay": "Paraguay",
+    "Peru": "Peru",
+    "Pohjois-Korea": "North Korea",
+    "Pohjois-Makedonia": "North Macedonia",
+    "Pohjois-Mariaanit": "Northern Mariana Islands",
+    "Portugali": "Portugal",
+    "Puerto Rico": "Puerto Rico",
+    "Puola": "Poland",
+    "Päiväntasaajan Guinea": "Equatorial Guinea",
+    "Qatar": "Qatar",
+    "Ranska": "France",
+    "Ranskan Guayana": "French Guiana",
+    "Ranskan Polynesia": "French Polynesia",
+    "Reunion": "Reunion",
+    "Réunion": "Reunion",
+    "Romania": "Romania",
+    "Ruanda": "Rwanda",
+    "Ruotsi": "Sweden",
+    "Saint Kitts ja Nevis": "Saint Kitts and Nevis",
+    "Saint Lucia": "Saint Lucia",
+    "Saint Vincent ja Grenadiinit": "Saint Vincent and the Grenadines",
+    "Saksa": "Germany",
+    "Salomonsaaret": "Solomon Islands",
+    "Sambia": "Zambia",
+    "Samoa": "Samoa",
+    "San Marino": "San Marino",
+    "São Tomé ja Príncipe": "Sao Tome and Principe",
+    "Sao Tome ja Principe": "Sao Tome and Principe",
+    "Saudi-Arabia": "Saudi Arabia",
+    "Senegal": "Senegal",
+    "Serbia": "Serbia",
+    "Seychellit": "Seychelles",
+    "Sierra Leone": "Sierra Leone",
+    "Singapore": "Singapore",
+    "Sint Maarten": "Sint Maarten",
+    "Slovakia": "Slovakia",
+    "Slovenia": "Slovenia",
+    "Somalia": "Somalia",
+    "Sri Lanka": "Sri Lanka",
+    "Sudan": "Sudan",
+    "Suomi": "Finland",
+    "Suriname": "Suriname",
+    "Sveitsi": "Switzerland",
+    "Swazimaa": "Eswatini",
+    "Syyria": "Syria",
+    "Tadzikistan": "Tajikistan",
+    "Taiwan": "Taiwan",
+    "Tansania": "Tanzania",
+    "Tanska": "Denmark",
+    "Thaimaa": "Thailand",
+    "Togo": "Togo",
+    "Tonga": "Tonga",
+    "Trinidad ja Tobago": "Trinidad and Tobago",
+    "Tsad": "Chad",
+    "Tsekki": "Czechia",
+    "Tšekki": "Czechia",
+    "Tunisia": "Tunisia",
+    "Turkmenistan": "Turkmenistan",
+    "Turkki": "Turkey",
+    "Turks- ja Caicossaaret": "Turks and Caicos Islands",
+    "Ukraina": "Ukraine",
+    "Unkari": "Hungary",
+    "Uruguay": "Uruguay",
+    "Uusi-Kaledonia": "New Caledonia",
+    "Uusi-Seelanti": "New Zealand",
+    "Uzbekistan": "Uzbekistan",
+    "Valko-Venäjä": "Belarus",
+    "Vanuatu": "Vanuatu",
+    "Venezuela": "Venezuela",
+    "Venäjä": "Russia",
+    "Vietnam": "Vietnam",
+    "Viro": "Estonia",
+    "Wallis ja Futuna": "Wallis and Futuna",
+    "Yhdistynyt kuningaskunta": "United Kingdom",
+    "Yhdysvallat": "United States",
+    "Yhdysvaltain Neitsytsaaret": "United States Virgin Islands",
+}
+
+YLEISET_MAA_ALIAKSET.update(SUOMENKIELISET_MAA_ALIAKSET)
 
 # Varalista tunnetuista kartalla ei-klikattavista maista/alueista.
 # Tätä käytetään, jos selain ei ole vielä ehtinyt lähettää klikattavien maiden listaa.
@@ -737,7 +982,21 @@ def tarkista_maa_tietokannasta(maa):
     return bool(tulos)
 
 def _normalisoi_maa_syote(teksti):
-    return "".join(char for char in (teksti or "").lower().strip() if char.isalnum())
+    teksti = unicodedata.normalize("NFKD", (teksti or "").lower().strip())
+    return "".join(
+        char for char in teksti
+        if char.isalnum() and not unicodedata.combining(char)
+    )
+
+
+def _maa_aliasit_norm_map():
+    alias_map = {}
+    for alias, kohde in YLEISET_MAA_ALIAKSET.items():
+        alias_avain = _normalisoi_maa_syote(alias)
+        kohde_avain = _normalisoi_maa_syote(kohde)
+        if alias_avain and kohde_avain:
+            alias_map[alias_avain] = kohde_avain
+    return alias_map
 
 def _ehdotuksen_minimiraja(pituus):
     if pituus <= 4:
@@ -769,18 +1028,17 @@ def hae_lahin_maaehdotus(maa, maat=None):
         return None
 
     maat_normalisoitu_map = {_normalisoi_maa_syote(maa_nimi): maa_nimi for maa_nimi in maat}
+    hakukohteet_map = dict(maat_normalisoitu_map)
 
-    alias_osuma = YLEISET_MAA_ALIAKSET.get(syote_normalisoitu)
-    if alias_osuma:
-        alias_avain = _normalisoi_maa_syote(alias_osuma)
-        if alias_avain in maat_normalisoitu_map:
-            return maat_normalisoitu_map[alias_avain]
+    for alias_avain, kohde_avain in _maa_aliasit_norm_map().items():
+        if kohde_avain in maat_normalisoitu_map:
+            hakukohteet_map[alias_avain] = maat_normalisoitu_map[kohde_avain]
 
-    if syote_normalisoitu in maat_normalisoitu_map:
-        return maat_normalisoitu_map[syote_normalisoitu]
+    if syote_normalisoitu in hakukohteet_map:
+        return hakukohteet_map[syote_normalisoitu]
 
     pisteet = []
-    for maa_normalisoitu in maat_normalisoitu_map:
+    for maa_normalisoitu in hakukohteet_map:
         samankaltaisuus = difflib.SequenceMatcher(None, syote_normalisoitu, maa_normalisoitu).ratio()
         pisteet.append((maa_normalisoitu, samankaltaisuus))
 
@@ -797,7 +1055,7 @@ def hae_lahin_maaehdotus(maa, maat=None):
     if len(pisteet) > 1 and (paras_piste - toiseksi_paras_piste) < 0.08:
         return None
 
-    return maat_normalisoitu_map[paras_maa]
+    return hakukohteet_map[paras_maa]
 
 def hae_maan_koordinaatit(maa):
     conn = get_db_connection()
@@ -873,19 +1131,17 @@ def hae_normalisoitu_maa_nimi_map():
             avain = _normalisoi_maa_syote(nimi)
             if avain:
                 nimi_map[avain] = nimi
+        for alias_avain, kohde_avain in _maa_aliasit_norm_map().items():
+            kohde = nimi_map.get(kohde_avain)
+            if kohde:
+                nimi_map[alias_avain] = kohde
         return nimi_map
     finally:
         cursor.close()
         conn.close()
 
 def hae_kartta_aliasit():
-    alias_map = {}
-    for alias, kohde in YLEISET_MAA_ALIAKSET.items():
-        alias_avain = _normalisoi_maa_syote(alias)
-        kohde_avain = _normalisoi_maa_syote(kohde)
-        if alias_avain and kohde_avain:
-            alias_map[alias_avain] = kohde_avain
-    return alias_map
+    return _maa_aliasit_norm_map()
 
 
 def hae_maiden_konteksti():
@@ -931,6 +1187,15 @@ def hae_maiden_konteksti():
         if len(iso_raaka) == 2 and iso_raaka.isalpha():
             sallitut_iso_koodit.append(iso_raaka)
             iso_maa_nimi_map[iso_raaka] = nimi
+
+    for alias_avain, kohde_avain in _maa_aliasit_norm_map().items():
+        kohde_nimi = maa_nimi_map.get(kohde_avain)
+        if not kohde_nimi:
+            continue
+        maa_nimi_map[alias_avain] = kohde_nimi
+        kohde_tiedot = maa_tiedot_norm_map.get(kohde_avain)
+        if kohde_tiedot:
+            maa_tiedot_norm_map[alias_avain] = kohde_tiedot
 
     return {
         'sallitut_iso_koodit': sorted(set(sallitut_iso_koodit)),
