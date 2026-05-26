@@ -52,8 +52,8 @@
             overlay.innerHTML = [
                 '<div class="render-wake-loader__panel">',
                 '<div class="render-wake-loader__compass" aria-hidden="true"></div>',
-                '<p class="render-wake-loader__title">Her&auml;tell&auml;&auml;n retkikuntaa</p>',
-                '<p class="render-wake-loader__text">Palvelin k&auml;ynnistyy Renderiss&auml;. Matka jatkuu aivan kohta.</p>',
+                '<p class="render-wake-loader__title">Palvelin her&auml;&auml;</p>',
+                '<p class="render-wake-loader__text">Peli k&auml;ytt&auml;&auml; MySQL-tietokantaa. Renderin ilmainen palvelin nukkuu 15 minuutin hiljaisuuden j&auml;lkeen, joten cold start voi kest&auml;&auml; noin minuutin. P&auml;&auml;set kohta pelaamaan.</p>',
                 '</div>'
             ].join('');
             document.body.appendChild(overlay);
