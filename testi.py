@@ -625,6 +625,12 @@ def index():
     username = request.cookies.get('username', '')
     return render_template('index.html', username=username)
 
+
+@app.route('/healthz')
+def healthz():
+    return jsonify({'ok': True})
+
+
 def _varmista_pelaaja(username):
     conn = get_db_connection()
     cursor = conn.cursor()
