@@ -1,8 +1,7 @@
 (function () {
     var OVERLAY_ID = 'render-wake-loader';
     var LAST_AWAKE_KEY = 'kolumbus_render_last_awake_at';
-    var SLEEP_WINDOW_MS = 14 * 60 * 1000;
-    var NORMAL_DELAY_MS = 1200;
+    var SLEEP_WINDOW_MS = 15 * 60 * 1000;
     var LIKELY_SLEEPING_DELAY_MS = 350;
     var MIN_VISIBLE_MS = 650;
 
@@ -90,10 +89,14 @@
     }
 
     function start(reason, options) {
+        if (!(options && options.force) && !likelySleeping()) {
+            return null;
+        }
+
         var key = reason || 'request';
         var delay = options && typeof options.delay === 'number'
             ? options.delay
-            : (likelySleeping() ? LIKELY_SLEEPING_DELAY_MS : NORMAL_DELAY_MS);
+            : LIKELY_SLEEPING_DELAY_MS;
 
         pendingReasons.add(key);
         clearTimeout(hideTimer);
@@ -107,6 +110,8 @@
     }
 
     function stop(reason) {
+        if (!reason) return;
+
         var key = reason || 'request';
         pendingReasons.delete(key);
         if (pendingReasons.size > 0) return;
