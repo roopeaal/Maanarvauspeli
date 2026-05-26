@@ -25,3 +25,12 @@ services:
         value: "REQUIRED"
       - key: DB_SSL_CA_PATH
         sync: false
+  - type: web
+    name: maanarvauspeli-loader
+    runtime: static
+    buildCommand: "true"
+    staticPublishPath: ./static-loader
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

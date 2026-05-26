@@ -628,7 +628,10 @@ def index():
 
 @app.route('/healthz')
 def healthz():
-    return jsonify({'ok': True})
+    response = jsonify({'ok': True})
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 def _varmista_pelaaja(username):

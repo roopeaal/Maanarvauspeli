@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kristoffer Kolumbuksen jaljilla - lataus</title>
+    <script src="./config.js"></script>
+    <style>
+        :root {
+            --ink: #3b2a16;
+            --paper: #f4e4c4;
+            --paper-strong: #fff2d4;
+            --brown: #5a3f22;
+            --red: #8f2f23;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100svh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--ink);
+            background:
+                linear-gradient(180deg, rgba(255, 248, 232, 0.18), rgba(69, 46, 24, 0.28)),
+                radial-gradient(circle at 50% 22%, #fbf0d8 0%, #e4c28d 44%, #9b6a3b 100%);
+            overflow: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        body::before {
+            background:
+                repeating-linear-gradient(0deg, rgba(84, 56, 29, 0.07) 0 1px, transparent 1px 96px),
+                repeating-linear-gradient(90deg, rgba(84, 56, 29, 0.06) 0 1px, transparent 1px 116px),
+                radial-gradient(circle at 18% 20%, rgba(76, 49, 24, 0.13), transparent 34%),
+                radial-gradient(circle at 82% 78%, rgba(76, 49, 24, 0.13), transparent 36%);
+            opacity: 0.88;
+        }
+
+        body::after {
+            inset: 12px;
+            border: 2px solid rgba(96, 66, 35, 0.5);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 248, 232, 0.3),
+                inset 0 0 44px rgba(84, 56, 29, 0.22);
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            width: min(92vw, 520px);
+            padding: 30px 32px 28px;
+            border: 1px solid rgba(116, 82, 44, 0.52);
+            border-radius: 10px;
+            background:
+                linear-gradient(180deg, rgba(255, 244, 220, 0.97), rgba(232, 207, 166, 0.97));
+            text-align: center;
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 248, 232, 0.7),
+                0 24px 54px rgba(36, 24, 13, 0.34);
+        }
+
+        .compass {
+            width: 78px;
+            height: 78px;
+            margin: 0 auto 16px;
+            border: 3px solid var(--brown);
+            border-radius: 50%;
+            position: relative;
+            box-shadow:
+                inset 0 0 0 5px rgba(255, 248, 232, 0.66),
+                0 0 0 1px rgba(73, 48, 24, 0.2);
+            animation: spin 1.35s linear infinite;
+        }
+
+        .compass::before,
+        .compass::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+        }
+
+        .compass::before {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--brown);
+            transform: translate(-50%, -50%);
+        }
+
+        .compass::after {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 32px solid var(--red);
+            transform: translate(-50%, -88%);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(1.7rem, 6vw, 2.25rem);
+            line-height: 1.05;
+            letter-spacing: 0;
+        }
+
+        p {
+            margin: 12px auto 0;
+            max-width: 38ch;
+            color: #584027;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .status {
+            min-height: 1.5em;
+            margin-top: 18px;
+            font-weight: 700;
+            color: #4c351d;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button,
+        a {
+            appearance: none;
+            border: 0;
+            border-radius: 5px;
+            background: var(--brown);
+            color: #ffffff;
+            padding: 11px 16px;
+            font: 700 0.96rem "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button:hover,
+        a:hover {
+            background: #74542f;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .compass {
+                animation: none;
+            }
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 16px;
+            }
+
+            body::after {
+                inset: 7px;
+                border-width: 1px;
+            }
+
+            main {
+                padding: 26px 20px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="compass" aria-hidden="true"></div>
+        <h1>Palvelin her&auml;&auml;</h1>
+        <p>Peli k&auml;ytt&auml;&auml; MySQL-tietokantaa. Renderin ilmainen palvelin nukkuu 15 minuutin hiljaisuuden j&auml;lkeen, joten cold start voi kest&auml;&auml; noin minuutin.</p>
+        <p class="status" id="status" role="status" aria-live="polite">Yhdistet&auml;&auml;n peliin...</p>
+        <div class="actions">
+            <button type="button" id="retryButton">Yrit&auml; nyt</button>
+            <a id="directLink" href="#">Avaa peli</a>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            var config = window.KOLUMBUS_LOADER_CONFIG || {};
+            var params = new URLSearchParams(window.location.search);
+            var backendOrigin = (params.get("backend") || config.backendOrigin || "").replace(/\/+$/, "");
+            var appPath = params.get("next") || config.appPath || "/";
+            var healthPath = config.healthPath || "/healthz";
+            var statusEl = document.getElementById("status");
+            var retryButton = document.getElementById("retryButton");
+            var directLink = document.getElementById("directLink");
+            var attempt = 0;
+            var retryTimer = null;
+
+            if (!backendOrigin) {
+                statusEl.textContent = "Backendin osoite puuttuu config.js-tiedostosta.";
+                retryButton.disabled = true;
+                directLink.style.display = "none";
+                return;
+            }
+
+            function normalizePath(path) {
+                if (!path || path.charAt(0) !== "/") return "/";
+                return path;
+            }
+
+            function appUrl() {
+                return backendOrigin + normalizePath(appPath);
+            }
+
+            function healthUrl() {
+                var separator = healthPath.indexOf("?") === -1 ? "?" : "&";
+                return backendOrigin + healthPath + separator + "t=" + Date.now();
+            }
+
+            function setStatus(text) {
+                statusEl.textContent = text;
+            }
+
+            function scheduleRetry() {
+                clearTimeout(retryTimer);
+                var delay = Math.min(5000, 1100 + attempt * 350);
+                retryTimer = setTimeout(checkBackend, delay);
+            }
+
+            function goToGame() {
+                setStatus("Palvelin on valmiina. Avataan peli...");
+                window.location.replace(appUrl());
+            }
+
+            function checkBackend() {
+                attempt += 1;
+                setStatus("Heratellaan palvelinta... yritys " + attempt);
+
+                fetch(healthUrl(), {
+                    method: "GET",
+                    cache: "no-store",
+                    mode: "cors",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error("Health check returned " + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data || data.ok !== true) {
+                            throw new Error("Unexpected health response");
+                        }
+                        goToGame();
+                    })
+                    .catch(function () {
+                        setStatus("Palvelin kaynnistyy viela. Odota hetki...");
+                        scheduleRetry();
+                    });
+            }
+
+            retryButton.addEventListener("click", function () {
+                clearTimeout(retryTimer);
+                checkBackend();
+            });
+
+            directLink.href = appUrl();
+            checkBackend();
+        }());
+    </script>
+</body>
+</html>
