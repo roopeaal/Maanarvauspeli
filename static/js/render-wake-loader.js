@@ -1,15 +1,23 @@
 (function () {
     var OVERLAY_ID = 'render-wake-loader';
+    var MINI_LOADER_ID = 'backend-request-loader';
     var LAST_AWAKE_KEY = 'kolumbus_render_last_awake_at';
     var SLEEP_WINDOW_MS = 15 * 60 * 1000;
     var LIKELY_SLEEPING_DELAY_MS = 350;
     var MIN_VISIBLE_MS = 650;
+    var MINI_DELAY_MS = 180;
+    var MINI_MIN_VISIBLE_MS = 360;
 
     var pendingReasons = new Set();
+    var pendingMiniReasons = new Set();
     var showTimer = null;
     var hideTimer = null;
+    var miniShowTimer = null;
+    var miniHideTimer = null;
     var visibleSince = 0;
+    var miniVisibleSince = 0;
     var overlay = null;
+    var miniLoader = null;
 
     function now() {
         return Date.now();
@@ -61,6 +69,27 @@
         return overlay;
     }
 
+    function ensureMiniLoader() {
+        if (miniLoader) return miniLoader;
+
+        miniLoader = document.getElementById(MINI_LOADER_ID);
+        if (!miniLoader) {
+            miniLoader = document.createElement('div');
+            miniLoader.id = MINI_LOADER_ID;
+            miniLoader.className = 'backend-request-loader';
+            miniLoader.setAttribute('role', 'status');
+            miniLoader.setAttribute('aria-live', 'polite');
+            miniLoader.setAttribute('aria-hidden', 'true');
+            miniLoader.innerHTML = [
+                '<span class="backend-request-loader__mark" aria-hidden="true"></span>',
+                '<span class="backend-request-loader__text">Ladataan</span>'
+            ].join('');
+            document.body.appendChild(miniLoader);
+        }
+
+        return miniLoader;
+    }
+
     function showOverlay() {
         clearTimeout(showTimer);
         showTimer = null;
@@ -69,6 +98,18 @@
 
         var el = ensureOverlay();
         visibleSince = now();
+        el.setAttribute('aria-hidden', 'false');
+        el.classList.add('is-visible');
+    }
+
+    function showMiniLoader() {
+        clearTimeout(miniShowTimer);
+        miniShowTimer = null;
+        clearTimeout(miniHideTimer);
+        miniHideTimer = null;
+
+        var el = ensureMiniLoader();
+        miniVisibleSince = now();
         el.setAttribute('aria-hidden', 'false');
         el.classList.add('is-visible');
     }
@@ -86,6 +127,20 @@
         el.classList.remove('is-visible');
         el.setAttribute('aria-hidden', 'true');
         visibleSince = 0;
+    }
+
+    function hideMiniLoader() {
+        clearTimeout(miniShowTimer);
+        miniShowTimer = null;
+
+        if (!miniLoader) {
+            miniVisibleSince = 0;
+            return;
+        }
+
+        miniLoader.classList.remove('is-visible');
+        miniLoader.setAttribute('aria-hidden', 'true');
+        miniVisibleSince = 0;
     }
 
     function start(reason, options) {
@@ -109,6 +164,19 @@
         return key;
     }
 
+    function startMini(reason) {
+        var key = reason || 'request';
+        pendingMiniReasons.add(key);
+        clearTimeout(miniHideTimer);
+        miniHideTimer = null;
+
+        if (miniLoader && miniLoader.classList.contains('is-visible')) return key;
+        if (!miniShowTimer) {
+            miniShowTimer = setTimeout(showMiniLoader, MINI_DELAY_MS);
+        }
+        return key;
+    }
+
     function stop(reason) {
         if (!reason) return;
 
@@ -125,6 +193,24 @@
         var remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
         clearTimeout(hideTimer);
         hideTimer = setTimeout(hideOverlay, remaining);
+    }
+
+    function stopMini(reason) {
+        if (!reason) return;
+
+        var key = reason || 'request';
+        pendingMiniReasons.delete(key);
+        if (pendingMiniReasons.size > 0) return;
+
+        clearTimeout(miniShowTimer);
+        miniShowTimer = null;
+
+        if (!miniLoader || !miniLoader.classList.contains('is-visible')) return;
+
+        var elapsed = miniVisibleSince ? now() - miniVisibleSince : MINI_MIN_VISIBLE_MS;
+        var remaining = Math.max(0, MINI_MIN_VISIBLE_MS - elapsed);
+        clearTimeout(miniHideTimer);
+        miniHideTimer = setTimeout(hideMiniLoader, remaining);
     }
 
     function isSameOriginUrl(input) {
@@ -163,7 +249,9 @@
                 return originalFetch(input, init);
             }
 
-            var reason = start('fetch:' + Math.random().toString(36).slice(2));
+            var requestKey = 'fetch:' + Math.random().toString(36).slice(2);
+            var wakeReason = start(requestKey);
+            var miniReason = wakeReason ? null : startMini(requestKey);
             return originalFetch(input, init)
                 .then(function (response) {
                     noteAwake();
@@ -173,7 +261,8 @@
                     throw error;
                 })
                 .finally(function () {
-                    stop(reason);
+                    stop(wakeReason);
+                    stopMini(miniReason);
                 });
         }
 
@@ -189,18 +278,26 @@
 
             var action = form.getAttribute('action') || window.location.href;
             if (!isSameOriginUrl(action)) return;
-            start('form-navigation');
+            var wakeReason = start('form-navigation');
+            if (!wakeReason) {
+                startMini('form-navigation');
+            }
         });
 
         document.addEventListener('click', function (event) {
             var anchor = event.target.closest ? event.target.closest('a[href]') : null;
             if (!isPlainNavigationClick(event, anchor)) return;
-            start('link-navigation');
+            var wakeReason = start('link-navigation');
+            if (!wakeReason) {
+                startMini('link-navigation');
+            }
         });
 
         window.addEventListener('pageshow', function () {
             pendingReasons.clear();
+            pendingMiniReasons.clear();
             hideOverlay();
+            hideMiniLoader();
             noteAwake();
         });
     }
@@ -220,6 +317,8 @@
     window.RenderWakeLoader = {
         start: start,
         stop: stop,
+        startMini: startMini,
+        stopMini: stopMini,
         noteAwake: noteAwake
     };
 }());
