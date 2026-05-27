@@ -26,9 +26,9 @@
             padding: 24px;
             font-family: Georgia, "Times New Roman", serif;
             color: var(--ink);
-            background:
-                linear-gradient(180deg, rgba(255, 248, 232, 0.18), rgba(69, 46, 24, 0.28)),
-                radial-gradient(circle at 50% 22%, #fbf0d8 0%, #e4c28d 44%, #9b6a3b 100%);
+            background-color: #e8d2a8;
+            background-image:
+                radial-gradient(165% 130% at 50% -16%, #f9efd8 0%, #edd7ae 36%, #d9b884 64%, #b88e5f 100%);
             overflow: hidden;
         }
 
@@ -42,19 +42,40 @@
 
         body::before {
             background:
-                repeating-linear-gradient(0deg, rgba(84, 56, 29, 0.07) 0 1px, transparent 1px 96px),
-                repeating-linear-gradient(90deg, rgba(84, 56, 29, 0.06) 0 1px, transparent 1px 116px),
-                radial-gradient(circle at 18% 20%, rgba(76, 49, 24, 0.13), transparent 34%),
-                radial-gradient(circle at 82% 78%, rgba(76, 49, 24, 0.13), transparent 36%);
-            opacity: 0.88;
+                linear-gradient(180deg, rgba(255, 246, 226, 0.24), rgba(95, 66, 35, 0.16)),
+                url("./images/antique-world-map-1700.jpg");
+            background-repeat: no-repeat, no-repeat;
+            background-size: cover, cover;
+            background-position: center, center;
+            filter: sepia(0.84) saturate(0.42) contrast(0.95) brightness(1.05);
+            opacity: 0.66;
         }
 
         body::after {
             inset: 12px;
-            border: 2px solid rgba(96, 66, 35, 0.5);
+            border: 2px solid rgba(96, 66, 35, 0.52);
             box-shadow:
-                inset 0 0 0 1px rgba(255, 248, 232, 0.3),
-                inset 0 0 44px rgba(84, 56, 29, 0.22);
+                inset 0 0 0 1px rgba(164, 127, 81, 0.56),
+                inset 0 0 44px rgba(84, 56, 29, 0.22),
+                0 0 0 1px rgba(255, 248, 232, 0.22);
+            background:
+                radial-gradient(circle at 18% 20%, rgba(109, 76, 41, 0.16) 0%, rgba(109, 76, 41, 0) 36%),
+                radial-gradient(circle at 82% 19%, rgba(109, 76, 41, 0.14) 0%, rgba(109, 76, 41, 0) 34%),
+                radial-gradient(circle at 84% 82%, rgba(109, 76, 41, 0.16) 0%, rgba(109, 76, 41, 0) 40%),
+                radial-gradient(circle at 13% 80%, rgba(109, 76, 41, 0.12) 0%, rgba(109, 76, 41, 0) 34%),
+                repeating-linear-gradient(0deg, rgba(99, 70, 39, 0.085) 0 1px, transparent 1px 92px),
+                repeating-linear-gradient(90deg, rgba(99, 70, 39, 0.075) 0 1px, transparent 1px 108px),
+                repeating-linear-gradient(31deg, rgba(127, 92, 54, 0.055) 0 1px, transparent 1px 182px),
+                repeating-linear-gradient(-31deg, rgba(127, 92, 54, 0.05) 0 1px, transparent 1px 182px),
+                radial-gradient(rgba(74, 52, 29, 0.07) 0.75px, transparent 0.95px),
+                radial-gradient(circle at 0 0, rgba(106, 72, 38, 0.34) 0 18px, transparent 20px),
+                radial-gradient(circle at 100% 0, rgba(106, 72, 38, 0.34) 0 18px, transparent 20px),
+                radial-gradient(circle at 0 100%, rgba(106, 72, 38, 0.34) 0 18px, transparent 20px),
+                radial-gradient(circle at 100% 100%, rgba(106, 72, 38, 0.34) 0 18px, transparent 20px),
+                linear-gradient(90deg, rgba(111, 79, 43, 0.18) 0 2.2%, transparent 2.2% 97.8%, rgba(111, 79, 43, 0.18) 97.8% 100%),
+                linear-gradient(180deg, rgba(111, 79, 43, 0.18) 0 2.4%, transparent 2.4% 97.6%, rgba(111, 79, 43, 0.18) 97.6% 100%);
+            background-size: auto, auto, auto, auto, auto, auto, auto, auto, 4px 4px, auto, auto, auto, auto, auto, auto;
+            opacity: 0.78;
         }
 
         main {
