@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kristoffer Kolumbuksen jaljilla - lataus</title>
+    <title>Kristoffer Kolumbuksen j&auml;ljill&auml; - lataus</title>
     <script src="./config.js"></script>
     <style>
         :root {
@@ -237,7 +237,7 @@
 
             function checkBackend() {
                 attempt += 1;
-                setStatus("Heratellaan palvelinta... yritys " + attempt);
+                setStatus("Herätellään palvelinta...");
 
                 fetch(healthUrl(), {
                     method: "GET",
@@ -260,7 +260,7 @@
                         goToGame();
                     })
                     .catch(function () {
-                        setStatus("Palvelin kaynnistyy viela. Odota hetki...");
+                        setStatus("Palvelin käynnistyy vielä. Odota hetki...");
                         scheduleRetry();
                     });
             }
