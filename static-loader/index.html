@@ -133,32 +133,6 @@
             color: #4c351d;
         }
 
-        .actions {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        button,
-        a {
-            appearance: none;
-            border: 0;
-            border-radius: 5px;
-            background: var(--brown);
-            color: #ffffff;
-            padding: 11px 16px;
-            font: 700 0.96rem "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        button:hover,
-        a:hover {
-            background: #74542f;
-        }
-
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -193,10 +167,6 @@
         <h1>Palvelin her&auml;&auml;</h1>
         <p>Peli k&auml;ytt&auml;&auml; MySQL-tietokantaa. Renderin ilmainen palvelin nukkuu 15 minuutin hiljaisuuden j&auml;lkeen, joten cold start voi kest&auml;&auml; noin minuutin.</p>
         <p class="status" id="status" role="status" aria-live="polite">Yhdistet&auml;&auml;n peliin...</p>
-        <div class="actions">
-            <button type="button" id="retryButton">Yrit&auml; nyt</button>
-            <a id="directLink" href="#">Avaa peli</a>
-        </div>
     </main>
 
     <script>
@@ -207,15 +177,11 @@
             var appPath = params.get("next") || config.appPath || "/";
             var healthPath = config.healthPath || "/healthz";
             var statusEl = document.getElementById("status");
-            var retryButton = document.getElementById("retryButton");
-            var directLink = document.getElementById("directLink");
             var attempt = 0;
             var retryTimer = null;
 
             if (!backendOrigin) {
                 statusEl.textContent = "Backendin osoite puuttuu config.js-tiedostosta.";
-                retryButton.disabled = true;
-                directLink.style.display = "none";
                 return;
             }
 
@@ -278,12 +244,6 @@
                     });
             }
 
-            retryButton.addEventListener("click", function () {
-                clearTimeout(retryTimer);
-                checkBackend();
-            });
-
-            directLink.href = appUrl();
             checkBackend();
         }());
     </script>
