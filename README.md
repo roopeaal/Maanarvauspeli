@@ -10,8 +10,8 @@ This README is written from a published product perspective.
 
 ## Published Version
 
-- Live site: [https://lentokonepeli.onrender.com](https://lentokonepeli.onrender.com)
-- Cold-start loader: deploy `static-loader/` as a Render Static Site and use that URL as the public entrypoint.
+- Public game entrypoint: [https://maanarvauspeli-loader.onrender.com](https://maanarvauspeli-loader.onrender.com)
+- Backend game service: [https://maanarvauspeli.onrender.com](https://maanarvauspeli.onrender.com)
 - Source repository: [https://github.com/roopeaal/Maanarvauspeli](https://github.com/roopeaal/Maanarvauspeli)
 - Hosting platform: Render (Free Web Service)
 - Database: Aiven MySQL (SSL connection)
@@ -41,7 +41,7 @@ This README is written from a published product perspective.
 - The app is deployed on Render Free.
 - Free services can spin down after inactivity.
 - First load after inactivity may take around 30-90 seconds (cold start), after which the game runs normally.
-- `static-loader/index.html` is a separate static waiting room for cold starts. It pings `/healthz` until the Flask service is ready, then redirects to the game. If the backend URL changes, update `static-loader/config.js`.
+- `static-loader/index.html` is a separate static waiting room for cold starts. It pings `https://maanarvauspeli.onrender.com/healthz` until the Flask service is ready, then redirects to the game. If the backend URL changes, update `static-loader/config.js`.
 
 ## License and Attributions
 
