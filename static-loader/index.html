@@ -185,9 +185,9 @@
 <body>
     <main>
         <div class="compass" aria-hidden="true"></div>
-        <h1>Palvelin her&auml;&auml;</h1>
-        <p>Peli k&auml;ytt&auml;&auml; MySQL-tietokantaa. Renderin ilmainen palvelin nukkuu 15 minuutin hiljaisuuden j&auml;lkeen, joten cold start voi kest&auml;&auml; noin minuutin.</p>
-        <p class="status" id="status" role="status" aria-live="polite">Yhdistet&auml;&auml;n peliin...</p>
+        <h1>Peli&auml; k&auml;ynnistet&auml;&auml;n</h1>
+        <p>Peli toimii ilmaisella pilvipalvelimella, joka siirtyy lepotilaan, jos peli&auml; ei k&auml;ytet&auml; hetkeen. Palvelimen k&auml;ynnistyminen uudelleen voi kest&auml;&auml; noin minuutin.</p>
+        <p class="status" id="status" role="status" aria-live="polite">Her&auml;tell&auml;&auml;n palvelinta...</p>
     </main>
 
     <script>
@@ -260,7 +260,7 @@
                         goToGame();
                     })
                     .catch(function () {
-                        setStatus("Palvelin käynnistyy vielä. Odota hetki...");
+                        setStatus("Herätellään palvelinta...");
                         scheduleRetry();
                     });
             }
